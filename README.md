@@ -1,11 +1,11 @@
 # gilsoulcapstone
-My Senior Capstone project, a library of machine learning algorithms
+My Senior Capstone project/MIT Maker Portolfio, a collection of machine learning algorithms coded from scratch
 
-KNNLibrary:
+KNearestNeighbors:
 Uses Euclidean distance between data points to classify unknown points based on the classes of data points nearest to them
+
+KMeansClustering
 
 LinearRegression:
 Fits a line, plane, or hyperplane to a set of data for predicting future data
 
-NeuralNetwork:
-In progress, adjusts connections between neuron data structures to predict probabilities
