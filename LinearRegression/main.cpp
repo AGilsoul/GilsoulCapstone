@@ -30,12 +30,6 @@ int main() {
     cout << "Specify learning rate:" << endl;
     cin >> lr;
     run1(iterations, lr);
-    //auto testData = model.convertData(testingData);
-    //auto practiceData = model.convertData(trainingData);
-    //LinearRegression::printVector(trainingData);
-    //model.gradientDescent(trainSplit);
-    //model.runTest(testSplit, trainSplit);
-
     return 0;
 }
 
@@ -56,31 +50,31 @@ void run1(int iterations, double lr) {
     }
     LinearRegression model = LinearRegression(lr, iterations, true);
     auto data = model.convertData(actualData);
-    auto trainSplit = LinearRegression::vectorSplit(data, 0, ceil(data.size() * 0.7));
-    auto testSplit = LinearRegression::vectorSplit(data, ceil(data.size() * 0.7), data.size() - 1);
+    auto trainSplit = LinearRegression::vectorSplit(data, 0, ceil(data.size() * 0.6));
+    auto testSplit = LinearRegression::vectorSplit(data, ceil(data.size() * 0.6), data.size() - 1);
     model.runTest(testSplit, trainSplit);
 }
 
 void run2(int iterations, double lr) {
-    LinearRegression model = LinearRegression(lr, iterations, true);
-    auto pureData = readFile2D("realestate.csv");
-    auto data = model.convertData(pureData);
-    auto trainSplit = LinearRegression::vectorSplit(data, 0, ceil(pureData.size() * 0.8));
-    auto testSplit = LinearRegression::vectorSplit(data, ceil(data.size() * 0.8), data.size() - 1);
-    model.runTest(testSplit, trainSplit);
-    vector<double> newPoint = {{32}};
-    //auto newData = model.convertData(newPoint);
-    //model.normalize(newData);
-    cout << model.predict(newPoint);
-}
-
-void run3(int iterations, double lr) {
     auto trainingData = readFile2D("train.csv");
     auto testingData = readFile2D("test.csv");
     LinearRegression model = LinearRegression(lr, iterations, true);
     auto testData = model.convertData(testingData);
     auto practiceData = model.convertData(trainingData);
     model.runTest(testData, practiceData);
+    vector<vector<double>> newPoint = {{70, 0}};
+    auto newData = model.convertData(newPoint);
+    //model.normalize(newData);
+    cout << model.predict(newData[0]);
+}
+
+void run3(int iterations, double lr) {
+    auto tempData = readFile3D("multiple-linear-regression-dataset.csv");
+    LinearRegression model = LinearRegression(lr, iterations, true);
+    auto data = model.convertData(tempData);
+    auto trainSplit = LinearRegression::vectorSplit(data, 0, ceil(data.size() * 0.75));
+    auto testSplit = LinearRegression::vectorSplit(data, ceil(data.size() * 0.75), data.size() - 1);
+    model.runTest(testSplit, trainSplit);
     vector<vector<double>> newPoint = {{70, 0}};
     auto newData = model.convertData(newPoint);
     //model.normalize(newData);

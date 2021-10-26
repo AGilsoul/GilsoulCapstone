@@ -44,7 +44,6 @@ double LinearRegression::predict(vector<double> p) {
 //partial derivative of loss function, with respect to m
 //Dm = (-2/n)(summation n terms, i = 0,
 void LinearRegression::gradientDescent(vector<Point> input) {
-
     for (int i = 0; i < input[0].data.size() - 1; i++) {
         coefficients.push_back(0);
     }
@@ -64,10 +63,7 @@ void LinearRegression::gradientDescent(vector<Point> input) {
             printVector(coefficients);
             cout << "Intercept: " << c << endl << endl;
         }
-
-
     }
-
 }
 
 
@@ -77,13 +73,13 @@ void LinearRegression::runTest(vector<Point> testData, vector<Point> trainingDat
     double resultTest = costFunction(testData);
     if (verbose) {
         printResults(resultTrain, "TRAINING");
-        printResults(resultTest, "TEST");
+        printResults(resultTest, "**TEST**");
     }
 
 }
 
 void LinearRegression::printResults(double result, string session) {
-    cout << endl << "-----" << session << "-----" << endl;
+    cout << endl << "**********************" << session << "**********************" << endl;
     cout << "Mean Squared Error: " << result << endl;
     cout << "Mean Error: " << sqrt(result) << endl;
     cout << "Coefficient(s): {" << coefficients[0];
@@ -112,7 +108,7 @@ double LinearRegression::costFunction(vector<Point> actualOut) {
     }
     return (total / actualOut.size());
 }
-
+//Cost function partial derivative with respect to m
 double LinearRegression::derivM(vector<Point> input, double coefficient, int index) {
     double total = 0;
     for (int i = 0; i < input.size(); i++) {
@@ -121,7 +117,7 @@ double LinearRegression::derivM(vector<Point> input, double coefficient, int ind
     }
     return total / input.size();
 }
-
+//Cost function partial derivative with respect to c
 double LinearRegression::derivC(vector<Point> input) {
     double total = 0;
     for (int i = 0; i < input.size(); i++) {
