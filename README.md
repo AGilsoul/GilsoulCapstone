@@ -8,5 +8,5 @@ KMeansClustering:
 Similar to KNN, but finds clusters of points and places centroids in the middle, then comparing unkown points to the centroids for classification rather than every single point. In the case of the breast cancer dataset, rather than comparing unkown points to 400 other points, they are just compared to two centroids, one for malignant and one for benign. Much faster than KNN, but oftentimes less accurate.
 
 LinearRegression:
-Fits a line, plane, or hyperplane to a set of data for predicting future data.
+Fits a line, plane, or hyperplane to a set of data for predicting future data. Adjustments to the line/plane coefficients and bias are determined using gradient descent and partial derivatives with respect to each coefficient and bias. Currently has three sample data runs, the default uses two different variables to generate a plane for predicting the y-value of each set of variables.
 
