@@ -15,7 +15,7 @@ double NeuralNetwork::Neuron::calculate(vector<double> input) {
         total += weights[i] * input[i];
     }
     total += bias;
-    return sigmoid(total);
+    return total;
 }
 
 NeuralNetwork::NeuralNetwork(int numLayers, vector<int> neurons, double learningRate) {
@@ -34,8 +34,10 @@ NeuralNetwork::NeuralNetwork(int numLayers, vector<int> neurons, double learning
 
     uint64_t timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed>>32)};
-    //rng.seed(ss);
-    rng.seed(5);
+
+
+    rng.seed(ss);
+    //rng.seed(5);
 }
 
 //still need to code this and backpropogation method
@@ -51,32 +53,28 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<double> desiredRe
         for (int x = 0; x < input.size(); x++) {
             //gets final result of forward propogation
             vector<double> finalResult = forwardProp(input[x]);
-            //for every layer
-            for (int layerCount = layers.size() - 1; layerCount >= 0; layerCount--) {
-                //for every neuron in each layer
-                vector<double> tempResults;
+            //first layer backprop
+            vector<double> nextDeltas;
+            for (int neuronCount = 0; neuronCount < layers[layers.size() - 1].size();neuronCount++) {
+                auto curN = layers[layers.size()- 1][neuronCount];
+                curN->delta = finalGradient(curN, desiredResult[neuronCount]);
+                nextDeltas.push_back(curN->delta);
+            }
+            //hidden layer backprop
+            for (int layerCount = layers.size() - 2; layerCount >= 0; layerCount--) {
+                //for every neuron in the layer
+                vector<double> tempDeltas;
                 for (int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
-                    //the current neuron
                     auto curN = layers[layerCount][neuronCount];
-                    //updates every weight
+                    curN->delta = hiddenGradient(curN, nextDeltas);
+                    tempDeltas.push_back(curN->delta);
+                    //for every weight
                     for (int w = 0; w < curN->weights.size(); w++) {
-                        double weightAvg = 0;
-                        for (int r = 0; r < finalResult.size(); r++) {
-                            weightAvg += derivWeight(curN, w, finalResult[r]) * learningRate;
-                        }
-                        curN->weights[w] -= weightAvg / finalResult.size();
+                        curN->weights[w] -= weightDerivative(curN->delta, curN->prevInputs[w]) * learningRate;
                     }
-                    //updates the bias
-                    double biasAvg = 0;
-                    for (int r = 0; r < finalResult.size(); r++) {
-                        biasAvg += derivBias(curN, finalResult[r]) * learningRate;
-                    }
-                    curN->bias -= biasAvg / finalResult.size();
-
-                    tempResults.push_back(curN->calculate(curN->prevInputs));
+                    curN->bias -= curN->delta * learningRate;
                 }
-                //updates results to the results of the current layer
-                finalResult = tempResults;
+                nextDeltas = tempDeltas;
             }
         }
     }
@@ -101,7 +99,7 @@ vector<double> NeuralNetwork::forwardProp(vector<double> input) {
             double neuronResult = tempNPointer->calculate(data);
             tempNPointer->prevInputs = data;
             tempNPointer->output = neuronResult;
-            layerResults.push_back(neuronResult);
+            layerResults.push_back(sigmoid(neuronResult));
         }
         data = layerResults;
     }
@@ -130,6 +128,23 @@ void NeuralNetwork::initializeWeights(int numWeights, Neuron* newN) {
 }
 
 //FINISH THESE
+double NeuralNetwork::finalGradient(Neuron* curN, double expected) {
+    return sigmoidDeriv(curN->output) * (sigmoid(curN->output) - expected);
+}
+
+double NeuralNetwork::hiddenGradient(Neuron* curN, vector<double> nextDeltas) {
+    double total = 0;
+    for (int i = 0; i < curN->weights.size(); i++) {
+        total += curN->weights[i] * nextDeltas[i];
+    }
+    return sigmoidDeriv(curN->output) * total;
+}
+
+double NeuralNetwork::weightDerivative(double neuronError, double prevNeuron) {
+    return neuronError * prevNeuron;
+}
+
+
 //Cost function partial derivative with respect to the weights
 double NeuralNetwork::derivWeight(Neuron* curN, int index, double expected) {
     double prediction = curN->calculate(curN->prevInputs);

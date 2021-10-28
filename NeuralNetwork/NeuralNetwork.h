@@ -25,6 +25,7 @@ public:
         double bias;
         vector<double> prevInputs;
         double output;
+        double delta;
         double calculate(vector<double> input);
     };
 
@@ -35,6 +36,9 @@ public:
     vector<double> forwardProp(vector<double> input);
     double derivWeight(Neuron* curN, int index, double expected);
     double derivBias(Neuron* curN, double expected);
+    double finalGradient(Neuron* curN, double expected);
+    double hiddenGradient(Neuron* curN, vector<double> nextDeltas);
+    double weightDerivative(double neuronError, double prevNeuron);
     static void printVector(vector<double> input);
 
 
