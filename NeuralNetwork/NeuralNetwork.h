@@ -19,31 +19,31 @@ using std::time;
 
 class NeuralNetwork {
 public:
-    NeuralNetwork(int numLayers, vector<int> neurons, double learningRate);
-    void train(vector<vector<double>> input, vector<double> desiredResult);
-    static double sigmoid(double input);
-    static double sigmoidDeriv(double input);
-    static void printVector(vector<double> input);
-
     struct Neuron {
         Neuron() { bias = 0; }
         vector<double> weights;
         double bias;
         vector<double> prevInputs;
-        double prevOutput;
+        double output;
         double calculate(vector<double> input);
     };
 
-private:
-    void initializeWeights(int numWeights, Neuron& newN);
+    NeuralNetwork(int numLayers, vector<int> neurons, double learningRate);
+    void train(vector<vector<double>> input, vector<double> desiredResult, int iterations);
+    static double sigmoid(double input);
+    static double sigmoidDeriv(double input);
     vector<double> forwardProp(vector<double> input);
-    void backProp();
-    static double costFunction(NeuralNetwork::Neuron input, double desired);
-    static double derivWeight(NeuralNetwork::Neuron input, double desired, int index);
-    static double derivBias(NeuralNetwork::Neuron input, double desired);
-    static double derivInput(NeuralNetwork::Neuron input, double desired);
+    double derivWeight(Neuron* curN, int index, vector<double> expected);
+    double derivBias(Neuron* curN, vector<double> expected);
+    static void printVector(vector<double> input);
 
-    vector<vector<Neuron>> layers;
+
+
+private:
+    void initializeWeights(int numWeights, Neuron* newN);
+    void backProp();
+
+    vector<vector<Neuron*>> layers;
     double learningRate;
     std::mt19937_64 rng;
 
