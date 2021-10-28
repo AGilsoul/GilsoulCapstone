@@ -19,6 +19,10 @@ NeuralNetwork::NeuralNetwork(int numLayers, vector<int> neurons, double learning
         }
         layers.push_back(tempLayer);
     }
+
+    uint64_t timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed>>32)};
+    rng.seed(ss);
 }
 
 //still need to code this and backpropogation method
@@ -26,11 +30,20 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<double> desiredRe
     for (int i = 0; i < layers[0].size(); i++) {
         initializeWeights(input.size(), layers[0][i]);
     }
+    for (int i = 0; i < layers.size(); i++) {
+        for (int x = 0; x < layers[i].size(); x++) {
+            printVector(layers[i][x].weights);
+            cout << " ";
+        }
+        cout << endl;
+    }
+    /*
     for (int x = 0; x < input.size(); x++) {
         vector<double> finalResult = forwardProp(input[x]);
         vector<double> prevNeuronChange;
         //STOPPED HERE
     }
+     */
 
 }
 
@@ -43,11 +56,11 @@ double NeuralNetwork::sigmoidDeriv(double input) {
 }
 
 void NeuralNetwork::printVector(vector<double> input) {
-    std::cout << "{ " << input[0];
+    cout << "{ " << input[0];
     for (int i = 1; i < input.size(); i++) {
-        std::cout << ", " << input[i];
+        cout << ", " << input[i];
     }
-    std::cout << " }" << std::endl;
+    cout << " }";
 }
 
 double NeuralNetwork::Neuron::calculate(vector<double> input) {
@@ -64,8 +77,9 @@ double NeuralNetwork::Neuron::calculate(vector<double> input) {
 
 //Private Methods
 void NeuralNetwork::initializeWeights(int numWeights, Neuron& newN) {
+    std::uniform_real_distribution<double> unif(-1, 1);
     for (int i = 0; i < numWeights; i++) {
-        newN.weights.push_back(0);
+        newN.weights.push_back(unif(rng));
     }
 }
 

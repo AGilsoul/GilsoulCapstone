@@ -8,10 +8,13 @@
 #include <memory>
 #include <iostream>
 #include <cmath>
+#include <random>
+#include <chrono>
 
 using std::vector;
 using std::cout;
 using std::endl;
+using std::time;
 
 
 class NeuralNetwork {
@@ -42,6 +45,7 @@ private:
 
     vector<vector<Neuron>> layers;
     double learningRate;
+    std::mt19937_64 rng;
 
 };
 

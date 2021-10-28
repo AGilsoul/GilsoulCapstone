@@ -13,7 +13,7 @@ int main() {
 
     //Creates NeuralNetwork "net" with 3 layers, 2 neurons in layer 1, 3 in layer 2, 1 in layer 3
     //sets learning rate to 0.01 (not used yet)
-    NeuralNetwork net(3, {2, 3, 1}, 0.01);
+    NeuralNetwork net(4, {4, 3, 5, 3}, 0.01);
     //Creates a 2d Vector of inputs to test, just one double vector with 3 inputs
     vector<vector<double>> testData = {{1, 3, 5}};
     //still not really used yet, no functioning backprop yet
