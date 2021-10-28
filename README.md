@@ -1,4 +1,4 @@
-# gilsoulcapstone
+# GilsoulCapstone
 My Senior Capstone project/MIT Maker Portolfio, a collection of machine learning algorithms coded from scratch.
 
 KNearestNeighbors:
