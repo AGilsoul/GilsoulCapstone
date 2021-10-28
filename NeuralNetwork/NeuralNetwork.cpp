@@ -1,12 +1,11 @@
 //
-// Created by agils on 10/19/2021.
+// Created by Alex Gilsoul on 10/19/2021.
 //
 
 #include "NeuralNetwork.h"
-#include <cmath>
 
 
-
+//Public Methods
 NeuralNetwork::NeuralNetwork(int numLayers, vector<int> neurons, double learningRate) {
     this->learningRate = learningRate;
     for (int i = 0; i < numLayers; i++) {
@@ -22,7 +21,7 @@ NeuralNetwork::NeuralNetwork(int numLayers, vector<int> neurons, double learning
     }
 }
 
-//not yet working, will train the neural network by 
+//still need to code this and backpropogation method
 void NeuralNetwork::train(vector<vector<double>> input, vector<double> desiredResult) {
     for (int i = 0; i < layers[0].size(); i++) {
         initializeWeights(input.size(), layers[0][i]);
@@ -35,6 +34,40 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<double> desiredRe
 
 }
 
+double NeuralNetwork::sigmoid(double input) {
+    return 1 / (1 + exp(-input));
+}
+
+double NeuralNetwork::sigmoidDeriv(double input) {
+    return sigmoid(input) * (1 - sigmoid(input));
+}
+
+void NeuralNetwork::printVector(vector<double> input) {
+    std::cout << "{ " << input[0];
+    for (int i = 1; i < input.size(); i++) {
+        std::cout << ", " << input[i];
+    }
+    std::cout << " }" << std::endl;
+}
+
+double NeuralNetwork::Neuron::calculate(vector<double> input) {
+    prevInputs = input;
+    double total = 0;
+
+    for (int i = 0; i < weights.size(); i++) {
+        total += weights[i] * input[i];
+    }
+    total += bias;
+    return sigmoid(total);
+}
+
+
+//Private Methods
+void NeuralNetwork::initializeWeights(int numWeights, Neuron& newN) {
+    for (int i = 0; i < numWeights; i++) {
+        newN.weights.push_back(0);
+    }
+}
 
 vector<double> NeuralNetwork::forwardProp(vector<double> input) {
     auto data = input;
@@ -49,44 +82,14 @@ vector<double> NeuralNetwork::forwardProp(vector<double> input) {
     return data;
 }
 
-double NeuralNetwork::sigmoid(double input) {
-    return 1 / (1 + exp(-input));
+void NeuralNetwork::backProp() {
+
 }
-
-
-double NeuralNetwork::Neuron::calculate(vector<double> input) {
-    prevInputs = input;
-    double total = 0;
-
-    for (int i = 0; i < weights.size(); i++) {
-        total += weights[i] * input[i];
-    }
-    total += bias;
-    return sigmoid(total);
-}
-
-void NeuralNetwork::initializeWeights(int numWeights, Neuron& newN) {
-    for (int i = 0; i < numWeights; i++) {
-        newN.weights.push_back(0);
-        vector<double> tempWeightChange;
-        newN.avgWeightChange.push_back(tempWeightChange);
-    }
-}
-
-
 
 /*
- * Not sure if all of this is necessary
- * I included it just in case, might delete later
+ * Not sure if all the following methods are necessary for the network
+ * I included them just in case, might delete later
  */
-void NeuralNetwork::Neuron::calcWeightChange(double desired) {
-    for (int m = 0; m < weights.size(); m++) {
-        avgWeightChange[m].push_back(derivWeight(*this, desired, m));
-    }
-    avgBiasChange.push_back(derivBias(*this, desired));
-}
-
-
 double NeuralNetwork::costFunction(NeuralNetwork::Neuron input, double desired) {
     double total = 0;
     for (int i = 0; i < input.weights.size(); i++) {
@@ -96,7 +99,6 @@ double NeuralNetwork::costFunction(NeuralNetwork::Neuron input, double desired) 
     return (total / input.weights.size());
 }
 
-
 double NeuralNetwork::derivWeight(NeuralNetwork::Neuron input, double desired, int index) {
     double total = 0;
     for (int i = 0; i < input.weights.size(); i++) {
@@ -104,7 +106,6 @@ double NeuralNetwork::derivWeight(NeuralNetwork::Neuron input, double desired, i
     }
     return total / input.weights.size();
 }
-
 
 double NeuralNetwork::derivBias(NeuralNetwork::Neuron input, double desired) {
     double total = 0;
@@ -114,7 +115,6 @@ double NeuralNetwork::derivBias(NeuralNetwork::Neuron input, double desired) {
     }
     return total / input.weights.size();
 }
-
 
 double NeuralNetwork::derivInput(NeuralNetwork::Neuron input, double desired) {
     double total = 0;
@@ -126,10 +126,3 @@ double NeuralNetwork::derivInput(NeuralNetwork::Neuron input, double desired) {
 }
 
 
-void NeuralNetwork::printVector(vector<double> input) {
-    std::cout << "{ " << input[0];
-    for (int i = 1; i < input.size(); i++) {
-        std::cout << ", " << input[i];
-    }
-    std::cout << " }" << std::endl;
-}
