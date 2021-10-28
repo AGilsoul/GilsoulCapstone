@@ -33,8 +33,8 @@ public:
     static double sigmoid(double input);
     static double sigmoidDeriv(double input);
     vector<double> forwardProp(vector<double> input);
-    double derivWeight(Neuron* curN, int index, vector<double> expected);
-    double derivBias(Neuron* curN, vector<double> expected);
+    double derivWeight(Neuron* curN, int index, double expected);
+    double derivBias(Neuron* curN, double expected);
     static void printVector(vector<double> input);
 
 

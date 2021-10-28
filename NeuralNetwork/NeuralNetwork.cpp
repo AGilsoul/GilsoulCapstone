@@ -52,7 +52,7 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<double> desiredRe
             //gets final result of forward propogation
             vector<double> finalResult = forwardProp(input[x]);
             //for every layer
-            for (int layerCount = 0; layerCount < layers.size(); layerCount++) {
+            for (int layerCount = layers.size() - 1; layerCount >= 0; layerCount--) {
                 //for every neuron in each layer
                 vector<double> tempResults;
                 for (int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
@@ -60,10 +60,19 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<double> desiredRe
                     auto curN = layers[layerCount][neuronCount];
                     //updates every weight
                     for (int w = 0; w < curN->weights.size(); w++) {
-                        curN->weights[w] += derivWeight(curN, w, finalResult) * learningRate;
+                        double weightAvg = 0;
+                        for (int r = 0; r < finalResult.size(); r++) {
+                            weightAvg += derivWeight(curN, w, finalResult[r]) * learningRate;
+                        }
+                        curN->weights[w] -= weightAvg / finalResult.size();
                     }
                     //updates the bias
-                    curN->bias += derivBias(curN, finalResult) * learningRate;
+                    double biasAvg = 0;
+                    for (int r = 0; r < finalResult.size(); r++) {
+                        biasAvg += derivBias(curN, finalResult[r]) * learningRate;
+                    }
+                    curN->bias -= biasAvg / finalResult.size();
+
                     tempResults.push_back(curN->calculate(curN->prevInputs));
                 }
                 //updates results to the results of the current layer
@@ -122,27 +131,15 @@ void NeuralNetwork::initializeWeights(int numWeights, Neuron* newN) {
 
 //FINISH THESE
 //Cost function partial derivative with respect to the weights
-double NeuralNetwork::derivWeight(Neuron* curN, int index, vector<double> expected) {
-    double total = 0;
-    //gets average weight adjustment for each expected result from the next layer
-    //takes partial derivative to weights of mean squared error
-    for (int i = 0; i < expected.size(); i++) {
-        double result = 2 * (expected[i] - (curN->calculate(expected))) * -expected[index];
-        total += result;
-    }
-    return total / expected.size();
+double NeuralNetwork::derivWeight(Neuron* curN, int index, double expected) {
+    double prediction = curN->calculate(curN->prevInputs);
+    return 2 * (expected - (prediction)) * -curN->prevInputs[index];
 }
 
 //Cost function partial derivative with respect to the bias
-double NeuralNetwork::derivBias(Neuron* curN, vector<double> expected) {
-    double total = 0;
-    //gets average bias adjustment for each expected result from the next layer
-    //takes partial derivative to bias of mean squared error
-    for (int i = 0; i < expected.size(); i++) {
-        double prediction = curN->calculate(expected);
-        total += -2 * (expected[i] - prediction);
-    }
-    return total / expected.size();
+double NeuralNetwork::derivBias(Neuron* curN, double expected) {
+    double prediction = curN->calculate(curN->prevInputs);
+    return -2 * (expected - prediction);
 }
 
 

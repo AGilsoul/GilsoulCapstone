@@ -13,7 +13,7 @@ int main() {
 
     //Creates NeuralNetwork "net" with 3 layers, 2 neurons in layer 1, 3 in layer 2, 1 in layer 3
     //sets learning rate to 0.01 (not used yet)
-    NeuralNetwork net(4, {3, 10, 5, 3}, 0.01);
+    NeuralNetwork net(4, {3, 10, 5, 3}, 0.1);
     vector<double> expected = {1.0, 0.0, 0.0};
     //Creates a 2d Vector of inputs to test, just one double vector with 3 inputs
     vector<vector<double>> testData = {{0.7, 0.2, 0.1}};
@@ -24,7 +24,7 @@ int main() {
     cout << endl;
     NeuralNetwork::printVector(result);
     cout << endl;
-    net.train(testData, expected, 100);
+    net.train(testData, expected, 10000);
     result = net.forwardProp(testData[0]);
 
     result = net.forwardProp(testData[0]);
