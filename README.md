@@ -9,6 +9,3 @@ Similar to KNN, but finds clusters of points and places centroids in the middle,
 
 LinearRegression:
 Fits a line, plane, or hyperplane to a set of data for predicting future data. Adjustments to the line/plane coefficients and bias are determined using gradient descent and partial derivatives with respect to each coefficient and bias. Currently has three sample data runs, the default uses two different variables to generate a plane for predicting the y-value of each set of variables.
-
-NeuralNetwork:
-Currently a work in progress, this is supposed to be a basic working neural network. The forward propogation currently works, but I am still working on the back propogation and training methods.
