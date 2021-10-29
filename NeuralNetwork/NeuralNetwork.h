@@ -30,17 +30,18 @@ public:
     };
 
     NeuralNetwork(int numLayers, vector<int> neurons, double learningRate);
-    void train(vector<vector<double>> input, vector<double> desiredResult, int iterations);
+    void train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations);
     static double sigmoid(double input);
     static double sigmoidDeriv(double input);
     vector<double> forwardProp(vector<double> input);
     double derivWeight(Neuron* curN, int index, double expected);
     double derivBias(Neuron* curN, double expected);
     double finalGradient(Neuron* curN, double expected);
-    double hiddenGradient(Neuron* curN, vector<double> nextDeltas);
+    double hiddenGradient(Neuron* curN, int nIndex, vector<Neuron*> nextLayer, vector<double> nextDeltas);
     double weightDerivative(double neuronError, double prevNeuron);
     static void printVector(vector<double> input);
-
+    vector<vector<double>> vectorSplit(vector<vector<double>> vec, int start, int fin);
+    double test(vector<vector<double>> testData, vector<vector<double>> testLabel);
 
 
 private:
