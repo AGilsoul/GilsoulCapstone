@@ -15,6 +15,8 @@ using std::ifstream;
 
 void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
 void readBankFile(vector<vector<double>>& data, vector<vector<double>>& expected);
+void readMNISTFile(vector<vector<double>>& data, vector<vector<double>>& expected);
+void readStrokeFile(vector<vector<double>>& data, vector<vector<double>>& expected);
 
 
 int main() {
@@ -39,6 +41,8 @@ int main() {
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Reading data from " << fileName << "..." << endl;
     readCancerFile(data, expected, fileName);
+    //readStrokeFile(data, expected);
+    //readMNISTFile(data, expected);
     //readBankFile(data, expected);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data collected!" << endl << endl;
@@ -137,6 +141,212 @@ void readBankFile(vector<vector<double>>& data, vector<vector<double>>& expected
                 std::getline(fin, sList[i], '\n');
             }
             tempData.push_back(stod(sList[i]));
+        }
+        allData.push_back(tempData);
+    }
+
+    shuffle(begin(allData), end(allData), rng);
+    for (int vec = 0; vec < allData.size(); vec++) {
+        vector<double> newData;
+        vector<double> newExpect;
+        for (int val = 0; val < allData[vec].size(); val++) {
+            if (val != allData[vec].size() - 1) {
+                newData.push_back(allData[vec][val]);
+            }
+            else {
+                if (allData[vec][val] == 0) {
+                    newExpect.push_back(allData[vec][val]);
+                    newExpect.push_back(1);
+                }
+                else {
+                    newExpect.push_back(allData[vec][val]);
+                    newExpect.push_back(0);
+                }
+
+            }
+        }
+        data.push_back(newData);
+        expected.push_back(newExpect);
+    }
+    fin.close();
+}
+
+void readMNISTFile(vector<vector<double>>& data, vector<vector<double>>& expected) {
+    auto rng = std::default_random_engine {};
+    rng.seed(time(nullptr));
+    vector<vector<double>> allData;
+    string tempString;
+    ifstream fin("mnist_test.csv", ios::in);
+    int listSize = 785;
+    int counter = 0;
+    while (!fin.eof()) {
+        vector<double> tempData;
+        for (int i = 0; i < listSize; i++) {
+            if (i != listSize - 1) {
+                std::getline(fin, tempString, ',');
+            }
+            else {
+                std::getline(fin, tempString, '\n');
+            }
+            tempData.push_back(stod(tempString));
+        }
+        allData.push_back(tempData);
+        //counter++;
+    }
+
+    //shuffle(begin(allData), end(allData), rng);
+    for (int vec = 0; vec < allData.size(); vec++) {
+        vector<double> newData;
+        vector<double> newExpect;
+        for (int val = 0; val < allData[vec].size(); val++) {
+            if (val != 0) {
+                newData.push_back(allData[vec][val]);
+            }
+            else {
+                int index = allData[vec][0];
+                //cout << index << " : " << allData[vec][0] << endl;
+                for (int x = 0; x < 10; x++) {
+                    if (x == index) {
+                        newExpect.push_back(1);
+                    }
+                    else {
+                        newExpect.push_back(0);
+                    }
+                }
+
+            }
+        }
+        data.push_back(newData);
+        expected.push_back(newExpect);
+    }
+    fin.close();
+}
+
+void readStrokeFile(vector<vector<double>>& data, vector<vector<double>>& expected) {
+    auto rng = std::default_random_engine {};
+    rng.seed(time(nullptr));
+    vector<vector<double>> allData;
+    string id,gender,age,hypertension,heart_disease,ever_married,work_type,Residence_type,avg_glucose_level,bmi,smoking_status,stroke;
+    string sList[] = {id,gender,age,hypertension,heart_disease,ever_married,work_type,Residence_type,avg_glucose_level,bmi,smoking_status,stroke};
+    ifstream fin("healthcare-dataset-stroke-data.csv", ios::in);
+    int listSize = 12;
+    int counter = 0;
+    while (counter < 2000) {
+        counter++;
+        vector<double> tempData;
+        for (int i = 0; i < listSize; i++) {
+            //ID
+            if (i == 0) {
+                std::getline(fin, sList[i], ',');
+                //cout << sList[i] << endl;
+            }
+            //gender
+            else if (i == 1) {
+                std::getline(fin, sList[i], ',');
+                //cout << sList[i] << endl;
+                if (sList[i] == "Male") {
+                    tempData.push_back(1);
+                }
+                else {
+                    tempData.push_back(0);
+                }
+            }
+            //marrital status
+            else if (i == 5) {
+                std::getline(fin, sList[i], ',');
+                //cout << sList[i] << endl;
+                if (sList[i] == "Yes") {
+                    tempData.push_back(1);
+                }
+                else {
+                    tempData.push_back(0);
+                }
+            }
+            //work type
+            else if (i == 6) {
+                std::getline(fin, sList[i], ',');
+                //cout << sList[i] << endl;
+                int index;
+                if (sList[i] == "children") {
+                    index = 0;
+                }
+                else if (sList[i] == "Govt_job") {
+                    index = 1;
+                }
+                else if (sList[i] == "Never_worked") {
+                    index = 2;
+                }
+                else if (sList[i] == "Private") {
+                    index = 3;
+                }
+                else {
+                    index = 4;
+                }
+                for (int x = 0; x < 5; x++) {
+                    if (x == index) {
+                        tempData.push_back(1);
+                    }
+                    else {
+                        tempData.push_back(0);
+                    }
+                }
+            }
+            //residence
+            else if (i == 7) {
+                std::getline(fin, sList[i], ',');
+                //cout << sList[i] << endl;
+                if (sList[i] == "Urban") {
+                    tempData.push_back(1);
+                }
+                else {
+                    tempData.push_back(0);
+                }
+            }
+            //BMI
+            else if (i == 9) {
+                std::getline(fin, sList[i], ',');
+                //cout << sList[i] << endl;
+                if (sList[i] == "N/A") {
+                    tempData.push_back(0);
+                }
+                else {
+                    tempData.push_back(std::stod(sList[i]));
+                }
+            }
+            //smoking
+            else if (i == 10) {
+                std::getline(fin, sList[i], ',');
+                //cout << sList[i] << endl;
+                int index;
+                if (sList[i] == "formerly_smoked") {
+                    index = 0;
+                }
+                else if (sList[i] == "smokes") {
+                    index = 1;
+                }
+                else {
+                    index = 2;
+                }
+                for (int x = 0; x < 3; x++) {
+                    if (x == index) {
+                        tempData.push_back(1);
+                    }
+                    else {
+                        tempData.push_back(0);
+                    }
+                }
+            }
+            else if (i != listSize - 1) {
+                std::getline(fin, sList[i], ',');
+                //cout << sList[i] << endl;
+                tempData.push_back(stod(sList[i]));
+            }
+            else {
+                std::getline(fin, sList[i], '\n');
+                //cout << sList[i] << endl;
+                tempData.push_back(stod(sList[i]));
+            }
+
         }
         allData.push_back(tempData);
     }
