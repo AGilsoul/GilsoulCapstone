@@ -3,6 +3,7 @@
 #include <fstream>
 #include <algorithm>
 #include <random>
+#include <chrono>
 #include <windows.h>
 #include "NeuralNetwork.h"
 
@@ -12,10 +13,9 @@ using std::cin;
 using std::string;
 using std::ios;
 using std::ifstream;
+using namespace std::chrono;
 
 void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
-void readBankFile(vector<vector<double>>& data, vector<vector<double>>& expected);
-void readMNISTFile(vector<vector<double>>& data, vector<vector<double>>& expected);
 void readStrokeFile(vector<vector<double>>& data, vector<vector<double>>& expected);
 
 
@@ -23,12 +23,13 @@ int main() {
     double learningRate = 0.01;
     double momentum = 0.9;
     double numLayers = 2;
-    double splitRatio = 0.45;
-    vector<int> neuronCounts = {40, 2};
+    double splitRatio = 0.6;
+    vector<int> neuronCounts = {60, 2};
     int iterations = 100;
     string fileName = "Breast_Cancer.csv";
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     vector<vector<double>> data, expected;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << endl << "Neural Network Prediction of Malignancy in Breast Tumors" << endl;
@@ -42,11 +43,8 @@ int main() {
     cout << "Reading data from " << fileName << "..." << endl;
     readCancerFile(data, expected, fileName);
     //readStrokeFile(data, expected);
-    //readMNISTFile(data, expected);
-    //readBankFile(data, expected);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data collected!" << endl << endl;
-
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Normalizing data..." << endl;
     net.normalize(data);
@@ -82,12 +80,11 @@ int main() {
 
 void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName) {
     //strings to be used for reference and assignment of values when reading the file and assigning to the string list sList
-    string id, diagnosis, radMean, texMean, perMean, areaMean, smoothMean, compMean, concMean, concPointMean, symMean, fracMean, radSE, texSE, perSE, areaSE, smoothSE, compSE, concSE, concPointSE, symSE, fracSE, radWorst, perWorst, areaWorst, smoothWorst, compWorst, concWorst, concPointWorst, symWorst, fracWorst;
-    string sList[] = {id, diagnosis, radMean, texMean, perMean, areaMean, smoothMean, compMean, concMean, concPointMean, symMean, fracMean, radSE, texSE, perSE, areaSE, smoothSE, compSE, concSE, concPointSE, symSE, fracSE, radWorst, perWorst, areaWorst, smoothWorst, compWorst, concWorst, concPointWorst, symWorst, fracWorst};
+    string id, diagnosis, radMean, texMean, perMean, areaMean, smoothMean, compMean, concMean, concPointMean, symMean, fracMean, radSE, texSE, perSE, areaSE, smoothSE, compSE, concSE, concPointSE, symSE, fracSE, radWorst, perWorst, areaWorst, smoothWorst, compWorst, concWorst, concPointWorst, symWorst, fracWorst, fracDim;
+    string sList[] = {id, diagnosis, radMean, texMean, perMean, areaMean, smoothMean, compMean, concMean, concPointMean, symMean, fracMean, radSE, texSE, perSE, areaSE, smoothSE, compSE, concSE, concPointSE, symSE, fracSE, radWorst, perWorst, areaWorst, smoothWorst, compWorst, concWorst, concPointWorst, symWorst, fracWorst, fracDim};
     //Reads from the file "Breast_Cancer.csv"
     ifstream fin(fileName, ios::in);
     vector<string> labels;
-
     int listSize = sizeof(sList) / sizeof(sList[0]);
     while (!fin.eof()) {
         vector<double> dData;
@@ -119,105 +116,6 @@ void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& ex
 
         expected.push_back(result);
         testData.push_back(dData);
-    }
-    fin.close();
-}
-
-void readBankFile(vector<vector<double>>& data, vector<vector<double>>& expected) {
-    auto rng = std::default_random_engine {};
-    rng.seed(time(nullptr));
-    vector<vector<double>> allData;
-    string waveVariance, waveSkew, waveCurtosis, imageEntropy, id;
-    string sList[] = {waveVariance, waveSkew, waveCurtosis, imageEntropy, id};
-    ifstream fin("data_banknote_authentication.csv", ios::in);
-    int listSize = 5;
-    while (!fin.eof()) {
-        vector<double> tempData;
-        for (int i = 0; i < listSize; i++) {
-            if (i != listSize - 1) {
-                std::getline(fin, sList[i], ',');
-            }
-            else {
-                std::getline(fin, sList[i], '\n');
-            }
-            tempData.push_back(stod(sList[i]));
-        }
-        allData.push_back(tempData);
-    }
-
-    shuffle(begin(allData), end(allData), rng);
-    for (int vec = 0; vec < allData.size(); vec++) {
-        vector<double> newData;
-        vector<double> newExpect;
-        for (int val = 0; val < allData[vec].size(); val++) {
-            if (val != allData[vec].size() - 1) {
-                newData.push_back(allData[vec][val]);
-            }
-            else {
-                if (allData[vec][val] == 0) {
-                    newExpect.push_back(allData[vec][val]);
-                    newExpect.push_back(1);
-                }
-                else {
-                    newExpect.push_back(allData[vec][val]);
-                    newExpect.push_back(0);
-                }
-
-            }
-        }
-        data.push_back(newData);
-        expected.push_back(newExpect);
-    }
-    fin.close();
-}
-
-void readMNISTFile(vector<vector<double>>& data, vector<vector<double>>& expected) {
-    auto rng = std::default_random_engine {};
-    rng.seed(time(nullptr));
-    vector<vector<double>> allData;
-    string tempString;
-    ifstream fin("mnist_test.csv", ios::in);
-    int listSize = 785;
-    int counter = 0;
-    while (!fin.eof()) {
-        vector<double> tempData;
-        for (int i = 0; i < listSize; i++) {
-            if (i != listSize - 1) {
-                std::getline(fin, tempString, ',');
-            }
-            else {
-                std::getline(fin, tempString, '\n');
-            }
-            tempData.push_back(stod(tempString));
-        }
-        allData.push_back(tempData);
-        //counter++;
-    }
-
-    //shuffle(begin(allData), end(allData), rng);
-    for (int vec = 0; vec < allData.size(); vec++) {
-        vector<double> newData;
-        vector<double> newExpect;
-        for (int val = 0; val < allData[vec].size(); val++) {
-            if (val != 0) {
-                newData.push_back(allData[vec][val]);
-            }
-            else {
-                int index = allData[vec][0];
-                //cout << index << " : " << allData[vec][0] << endl;
-                for (int x = 0; x < 10; x++) {
-                    if (x == index) {
-                        newExpect.push_back(1);
-                    }
-                    else {
-                        newExpect.push_back(0);
-                    }
-                }
-
-            }
-        }
-        data.push_back(newData);
-        expected.push_back(newExpect);
     }
     fin.close();
 }

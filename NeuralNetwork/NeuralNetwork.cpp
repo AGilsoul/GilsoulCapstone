@@ -33,7 +33,7 @@ NeuralNetwork::NeuralNetwork(int numLayers, vector<int> neurons, double learning
         for (unsigned int n = 0; n < neurons[i]; n++) {
             Neuron* tempNeuron = new Neuron;
             if (i != 0) {
-                initializeWeights(neurons[i-1], tempNeuron);
+                initializeWeights(neurons[i-1], tempNeuron, neurons[i]);
             }
             tempLayer.push_back(tempNeuron);
         }
@@ -43,16 +43,35 @@ NeuralNetwork::NeuralNetwork(int numLayers, vector<int> neurons, double learning
 
 //min-max data normalization method
 void NeuralNetwork::normalize(vector<vector<double>>& input) {
-    for (unsigned int p = 0; p < input[0].size(); p++) {
-        vector<double> curData;
-        for (auto & i : input) {
-            curData.push_back(i[p]);
+    if (!conversions) {
+        for (unsigned int p = 0; p < input[0].size(); p++) {
+            vector<double> curData;
+            for (auto &i: input) {
+                curData.push_back(i[p]);
+            }
+            auto sortedData = sortVector(curData);
+            double min = sortedData[0];
+            double max = sortedData[sortedData.size() - 1];
+            for (auto &i: input) {
+                i[p] = (i[p] - min) / (max - min);
+                if (std::isnan(i[p])) {
+                    i[p] = 0;
+                }
+            }
+            vector<double> tempFactors = {min, max};
+            conversionRates.push_back(tempFactors);
         }
-        auto sortedData = sortVector(curData);
-        for (auto & i : input) {
-            i[p] = (i[p] - sortedData[0]) / (sortedData[sortedData.size() - 1] - sortedData[0]);
-            if (std::isnan(i[p])) {
-                i[p] = 0;
+        conversions = true;
+
+
+    }
+    else {
+        for (unsigned int p = 0; p < input[0].size(); p++) {
+            for (auto &i: input) {
+                i[p] = (i[p] - conversionRates[p][0]) / (conversionRates[p][1] - conversionRates[p][0]);
+                if (std::isnan(i[p])) {
+                    i[p] = 0;
+                }
             }
         }
     }
@@ -64,7 +83,7 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
     double m = momentum;
     //initialize input neuron weights
     for (unsigned int i = 0; i < layers[0].size(); i++) {
-        initializeWeights(input.size(), layers[0][i]);
+        initializeWeights(input.size(), layers[0][i], layers[1].size());
     }
     //for every iteration
     for (unsigned int z = 0; z < iterations; z++) {
@@ -208,6 +227,31 @@ double NeuralNetwork::test(vector<vector<double>>& testData, vector<vector<doubl
     return accuracy / testData.size() * 100;
 }
 
+//Method for predicting a vector representing an unknown data point
+vector<double> NeuralNetwork::predict(vector<double> unknownP) {
+    vector<vector<double>> reformatUnknown = {unknownP};
+    normalize(reformatUnknown);
+    auto forwardResult = forwardProp(reformatUnknown[0]);
+    vector<double> newResult;
+    int maxIndex;
+    double maxVal = 0;
+    for (int i = 0; i < forwardResult.size(); i++) {
+        if (forwardResult[i] > maxVal) {
+            maxVal = forwardResult[i];
+            maxIndex = i;
+        }
+    }
+    for (int i = 0; i < forwardResult.size(); i++) {
+        if (i == maxIndex) {
+            newResult.push_back(1);
+        }
+        else {
+            newResult.push_back(0);
+        }
+    }
+    return newResult;
+}
+
 
 //Private Methods
 //sigmoid activation function
@@ -237,8 +281,9 @@ double NeuralNetwork::reluDeriv(double input) {
 }
 
 //initializes neuron weights to a random value
-void NeuralNetwork::initializeWeights(int numWeights, Neuron* newN) {
-    std::uniform_real_distribution<double> unif(-1*sqrt(6./numWeights), sqrt(6./numWeights));
+void NeuralNetwork::initializeWeights(int numWeights, Neuron* newN, double numOut) {
+    //normalized xavier weight initialization
+    std::uniform_real_distribution<double> unif(-1 * sqrt(6.0) / sqrt(numWeights + numOut), sqrt(6.0) / sqrt(numWeights + numOut));
     bool notZero;
     for (unsigned int i = 0; i < numWeights; i++) {
         notZero = false;

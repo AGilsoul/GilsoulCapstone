@@ -38,6 +38,7 @@ public:
     static void printVector(vector<double> input);
     vector<vector<double>> vectorSplit(vector<vector<double>> vec, int start, int fin);
     double test(vector<vector<double>>& testData, vector<vector<double>>& testLabel);
+    vector<double> predict(vector<double> unknownP);
 
 private:
 
@@ -45,13 +46,15 @@ private:
     double sigmoidDeriv(double input);
     double relu(double input);
     double reluDeriv(double input);
-    void initializeWeights(int numWeights, Neuron* newN);
+    void initializeWeights(int numWeights, Neuron* newN, double numOut);
     double finalGradient(Neuron* curN, double expected);
     double hiddenGradient(Neuron* curN, int nIndex, vector<Neuron*> nextLayer, vector<double> nextDeltas);
     double weightDerivative(double neuronError, double prevNeuron);
     vector<double> sortVector(vector<double> vec);
 
     vector<vector<Neuron*>> layers;
+    vector<vector<double>> conversionRates;
+    bool conversions = false;
     double learningRate;
     double momentum;
     std::mt19937_64 rng;
