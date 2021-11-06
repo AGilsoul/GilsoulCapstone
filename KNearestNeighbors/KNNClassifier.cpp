@@ -10,8 +10,14 @@ void KNNClassifier::normalize(vector<Point>& input) {
             curData.push_back(i.data[p]);
         }
         auto sortedData = sortVector(curData);
+        double median = sortedData[ceil(sortedData.size() / 2)];
+        double p75 = sortedData[ceil(sortedData.size() / 2) + ceil(sortedData.size() / 4)];
+        double p25 = sortedData[ceil(sortedData.size() / 4)];
+        //for (auto & i : data) {
+        //i.coords[p] = (i.coords[p] - sortedData[0]) / (sortedData[sortedData.size() - 1] - sortedData[0]);
+        //}
         for (auto & i : input) {
-            i.data[p] = (i.data[p] - sortedData[0]) / (sortedData[sortedData.size() - 1] - sortedData[0]);
+            i.data[p] = (i.data[p] - median) / (p75 - p25);
         }
     }
 }

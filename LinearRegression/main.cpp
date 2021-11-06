@@ -2,6 +2,9 @@
 #include <vector>
 #include <fstream>
 #include <cmath>
+#include <algorithm>
+#include <random>
+#include <ctime>
 #include "LinearRegression.h"
 
 using std::vector;
@@ -15,6 +18,8 @@ using std::cout;
 using std::endl;
 using std::ceil;
 using std::cin;
+using std::default_random_engine;
+using std::time;
 
 vector<vector<double>> readFile2D(string);
 vector<vector<double>> readFile3D(string);
@@ -49,6 +54,9 @@ void run1(int iterations, double lr) {
         actualData.push_back(tempV);
     }
     LinearRegression model = LinearRegression(lr, iterations, true);
+    auto rng = default_random_engine {};
+    rng.seed(time(nullptr));
+    shuffle(begin(actualData), end(actualData), rng);
     auto data = model.convertData(actualData);
     auto trainSplit = LinearRegression::vectorSplit(data, 0, ceil(data.size() * 0.6));
     auto testSplit = LinearRegression::vectorSplit(data, ceil(data.size() * 0.6), data.size() - 1);
@@ -69,11 +77,11 @@ void run2(int iterations, double lr) {
 }
 
 void run3(int iterations, double lr) {
-    auto tempData = readFile3D("multiple-linear-regression-dataset.csv");
+    auto tempData = readFile3D("airfoil.csv");
     LinearRegression model = LinearRegression(lr, iterations, true);
     auto data = model.convertData(tempData);
-    auto trainSplit = LinearRegression::vectorSplit(data, 0, ceil(data.size() * 0.75));
-    auto testSplit = LinearRegression::vectorSplit(data, ceil(data.size() * 0.75), data.size() - 1);
+    auto trainSplit = LinearRegression::vectorSplit(data, 0, ceil(data.size() * 0.6));
+    auto testSplit = LinearRegression::vectorSplit(data, ceil(data.size() * 0.6), data.size() - 1);
     model.runTest(testSplit, trainSplit);
     vector<vector<double>> newPoint = {{70, 0}};
     auto newData = model.convertData(newPoint);
@@ -100,16 +108,33 @@ vector<vector<double>> readFile2D(string fileName) {
 vector<vector<double>> readFile3D(string fileName) {
     ifstream fin(fileName, ios::in);
     vector<vector<double>> data;
+    int count = 0;
     while (!fin.eof()) {
+        cout << count << endl;
         vector<double> tempD;
         string sX;
         getline(fin, sX, ',');
         tempD.push_back(stod(sX));
+        cout << sX << " ";
         getline(fin, sX, ',');
         tempD.push_back(stod(sX));
-        getline(fin, sX, '\n');
+        cout << sX << " ";
+        getline(fin, sX, ',');
         tempD.push_back(stod(sX));
+        cout << sX << " ";
+        getline(fin, sX, ',');
+        tempD.push_back(stod(sX));
+        cout << sX << " ";
+        getline(fin, sX, ',');
+        tempD.push_back(stod(sX));
+        cout << sX << " ";
+        getline(fin, sX, ',');
+        tempD.push_back(stod(sX));
+        cout << sX << endl;
+        //getline(fin, sX, '\n');
+        //tempD.push_back(stod(sX));
         data.push_back(tempD);
+        count++;
     }
     fin.close();
     return data;

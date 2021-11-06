@@ -10,6 +10,7 @@
 #include "KNNClassifier.h"
 
 using namespace std;
+using namespace std::chrono;
 
 vector<KNNClassifier::Point> readFile(KNNClassifier);
 
@@ -17,13 +18,16 @@ vector<KNNClassifier::Point> readFile(KNNClassifier);
 
 int main() {
     double accuracy = 0;
+    double timeAvg = 0;
     double result;
     int iterations, k;
 
-    cout << "Enter number of nearest points/neighbors (K) to analyze: ";
+    cout << endl << endl << endl << "KNN Classifier Algorithmic Prediction of Malignancy in Breast Tumors" << endl;
+    cout << "******************************************************" << endl << endl;
+    cout << "Enter number of nearest points/neighbors (K) to analyze: " << endl;
     cin >> k;
     cout << endl;
-    cout << "Enter number of epochs(iterations) to test data on:";
+    cout << "Enter number of epochs(iterations) to test data on:" << endl;
     cin >> iterations;
     cout << endl;
 
@@ -44,16 +48,21 @@ int main() {
         //Shuffles the patientData vector using the randomizing engine
         shuffle(begin(patientData), end(patientData), rng);
         //Does an 80/20 split on the patientData vector, 80% of the data for training, 20% for testing
-        auto trainSplit = classifier.vectorSplit(patientData, 0, ceil(patientData.size() * 0.8));
-        auto testSplit = classifier.vectorSplit(patientData, ceil(patientData.size() * 0.8), patientData.size() - 1);
+        auto trainSplit = classifier.vectorSplit(patientData, 0, ceil(patientData.size() * 0.6));
+        auto testSplit = classifier.vectorSplit(patientData, ceil(patientData.size() * 0.6), patientData.size() - 1);
         //Trains the classifier using the training data
         classifier.train(trainSplit);
         //Gets the result from testing the classifier on the testing data
+        auto testStart = high_resolution_clock::now();
         result = classifier.runTest(testSplit);
+        auto testEnd = high_resolution_clock::now();
+        auto testDuration = duration_cast<microseconds>(testEnd - testStart).count() / testSplit.size();
+        timeAvg += testDuration;
         accuracy += result;
         cout << "Accuracy of epoch " << i + 1 << ": " << result << "%" << endl;
     }
     cout << endl << "Percent of correctly identified tumors (Malignant/Benign): " << accuracy / iterations << "%" << endl;
+    cout << "Time avg: " << timeAvg / iterations;
     return 0;
 }
 

@@ -3,13 +3,17 @@
 #include <vector>
 #include <fstream>
 #include <algorithm>
+#include <chrono>
 
 using namespace std;
+using namespace std::chrono;
 
 vector<KMeans::Point> readFileCancer();
 
 int main() {
     double accuracy = 0;
+    double trainAvg = 0;
+    double testAvg = 0;
     double result = 0;
     int iterations, k;
 
@@ -29,16 +33,26 @@ int main() {
         rng.seed(time(nullptr));
         //rng.seed(5);
         shuffle(begin(patientData), end(patientData), rng);
-        auto trainSplit = classifier.vectorSplit(patientData, 0, ceil(patientData.size() * 0.75));
-        auto testSplit = classifier.vectorSplit(patientData, ceil(patientData.size() * 0.75), patientData.size() - 1);
+        auto trainSplit = classifier.vectorSplit(patientData, 0, ceil(patientData.size() * 0.6));
+        auto testSplit = classifier.vectorSplit(patientData, ceil(patientData.size() * 0.6), patientData.size() - 1);
         cout << "training..." << endl;
+        auto trainStart = high_resolution_clock::now();
         classifier.train(trainSplit);
+        auto trainEnd = high_resolution_clock::now();
+        auto trainDuration = duration_cast<microseconds>(trainEnd - trainStart).count() / trainSplit.size();
+        trainAvg += trainDuration;
         cout << "converged" << endl;
+        auto testStart = high_resolution_clock::now();
         result = classifier.runTest(testSplit, trainSplit);
+        auto testEnd = high_resolution_clock::now();
+        auto testDuration = duration_cast<microseconds>(testEnd - testStart).count() /  testSplit.size();
+        testAvg += testDuration;
         accuracy += result;
         cout << "Accuracy of epoch " << i + 1 << ": " << result << "%" << endl;
     }
     cout << endl << "Percent of correctly identified data points with " << k << " centroids: " << accuracy / iterations << "%" << endl;
+    cout << "Average training time: " << trainAvg / iterations << "ms" << endl;
+    cout << "Average testing time: " << testAvg / iterations << "ms" << endl;
 
     return 0;
 }

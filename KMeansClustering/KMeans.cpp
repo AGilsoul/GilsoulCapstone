@@ -30,8 +30,14 @@ void KMeans::normalize(vector<Point>& data) {
             curData.push_back(i.coords[p]);
         }
         auto sortedData = sortVector(curData);
+        double median = sortedData[ceil(sortedData.size() / 2)];
+        double p75 = sortedData[ceil(sortedData.size() / 2) + ceil(sortedData.size() / 4)];
+        double p25 = sortedData[ceil(sortedData.size() / 4)];
+        //for (auto & i : data) {
+            //i.coords[p] = (i.coords[p] - sortedData[0]) / (sortedData[sortedData.size() - 1] - sortedData[0]);
+        //}
         for (auto & i : data) {
-            i.coords[p] = (i.coords[p] - sortedData[0]) / (sortedData[sortedData.size() - 1] - sortedData[0]);
+            i.coords[p] = (i.coords[p] - median) / (p75 - p25);
         }
     }
 
@@ -64,7 +70,6 @@ void KMeans::train(vector<Point> input) {
     vector<string> labels;
     vector<vector<Point>> labelPoints;
     // ready to generate random numbers
-    //std::cout << "making starting centroid" << std::endl;
     for (int i = 0; i < k; i++) {
         vector<double> tempCoords;
         for (int dataCount = 0; dataCount < input[0].coords.size(); dataCount++) {
@@ -73,23 +78,20 @@ void KMeans::train(vector<Point> input) {
         Point newP(tempCoords);
         centroids.push_back(newP);
     }
-
     vector<double> centroidDiffs;
     bool converged = false;
     vector<Point> prevCentroids;
 
-    //std::cout << "Starting convergence loop" << std::endl;
+    //do while loop, updates centroid locations
     do {
         centroidPoints.clear();
         centroidDiffs.clear();
         prevCentroids = centroids;
-
         for (int i = 0; i < k; i++) {
             vector<Point> tempVec;
             centroidPoints.push_back(tempVec);
         }
         //assign points to nearest centroids
-        //std::cout << "Assigning points to centroids" << std::endl;
         for (int inputCount = 0; inputCount < input.size(); inputCount++) {
             vector<double> cDist = getDistances(input[inputCount].coords, centroids);
             int minIndex;
@@ -101,33 +103,13 @@ void KMeans::train(vector<Point> input) {
                 }
             }
             centroidPoints[minIndex].push_back(input[inputCount]);
-            //for (int x = 0; x < centroids.size(); x++) {
-                //std::cout << "{ " << centroids[x].coords[0];
-                //for (int i = 1; i < centroids[x].coords.size(); i++) {
-                    //std::cout << ", " << centroids[x].coords[i];
-                //}
-                //std::cout << " }" << std::endl;
-                //std::cout << "has a point count of: " << centroidPoints[x].size() << std:: endl << std::endl;
-            //}
-
         }
 
-
-
-
         //Move centroids based on average assigned point distance
-        //std::cout << "Adjusting centroids" << std::endl;
         for (int centroidCount = 0; centroidCount < centroids.size(); centroidCount++) {
             //saves previous centroid data
             vector<double> newData;
             //for every data index
-
-            //std::cout << "{ " << centroids[centroidCount].coords[0];
-            //for (int i = 1; i < centroids[centroidCount].coords.size(); i++) {
-                //std::cout << ", " << centroids[centroidCount].coords[i];
-            //}
-            //std::cout << " }" << std::endl;
-            //std::cout << "has a point count of: " << centroidPoints[centroidCount].size() << std:: endl << std::endl;
             if (centroidPoints[centroidCount].size() != 0) {
                 for (int column = 0; column < centroidPoints[centroidCount][0].coords.size(); column++) {
                     //for every centroid's assigned data points
@@ -144,7 +126,7 @@ void KMeans::train(vector<Point> input) {
             }
 
         }
-        //std::cout << "Finished adjusting" << std::endl;
+
         bool allZero = true;
         for (int centroidCount = 0; centroidCount < centroidDiffs.size(); centroidCount++) {
             if (centroidDiffs[centroidCount] != 0) {
@@ -154,9 +136,7 @@ void KMeans::train(vector<Point> input) {
         if (allZero) {
             converged = true;
         }
-        //std::cout << "Done calculating state" << std::endl;
     } while (!converged);
-    //std:: cout << "converged" << std::endl;
 
     //determine centroid labels based on data points
     for (int centroidCount = 0; centroidCount < centroids.size(); centroidCount++) {

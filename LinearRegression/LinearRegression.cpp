@@ -50,7 +50,7 @@ void LinearRegression::gradientDescent(vector<Point> input) {
     int iterator = 0;
     while (iterator < iterations) {
         for (int m = 0; m < coefficients.size(); m++) {
-            coefficients[m] -= learningRate * derivM(input, coefficients[m], m);
+            coefficients[m] -= learningRate * derivM(input, coefficients[m]);
         }
         c -= learningRate * derivC(input);
         iterator++;
@@ -109,7 +109,7 @@ double LinearRegression::costFunction(vector<Point> actualOut) {
     return (total / actualOut.size());
 }
 //Cost function partial derivative with respect to m
-double LinearRegression::derivM(vector<Point> input, double coefficient, int index) {
+double LinearRegression::derivM(vector<Point> input, int index) {
     double total = 0;
     for (int i = 0; i < input.size(); i++) {
         double result = 2 * (input[i].data[input[i].data.size() - 1] - (predict(input[i]))) * -input[i].data[index];
