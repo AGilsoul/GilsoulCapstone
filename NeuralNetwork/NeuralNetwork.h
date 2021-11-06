@@ -42,6 +42,7 @@ public:
 
 private:
 
+    vector<double> predictTest(vector<double> unknownP);
     double sigmoid(double input);
     double sigmoidDeriv(double input);
     double relu(double input);

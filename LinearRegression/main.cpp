@@ -34,7 +34,7 @@ int main() {
     cin >> iterations;
     cout << "Specify learning rate:" << endl;
     cin >> lr;
-    run1(iterations, lr);
+    run2(iterations, lr);
     return 0;
 }
 

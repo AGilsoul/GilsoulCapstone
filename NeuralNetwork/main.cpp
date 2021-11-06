@@ -22,8 +22,10 @@ void readStrokeFile(vector<vector<double>>& data, vector<vector<double>>& expect
 int main() {
     double learningRate = 0.01;
     double momentum = 0.9;
+    //number of layers excluding input layer
     double numLayers = 2;
     double splitRatio = 0.6;
+    //neuron counts for hidden and output layers
     vector<int> neuronCounts = {60, 2};
     int iterations = 100;
     string fileName = "Breast_Cancer.csv";

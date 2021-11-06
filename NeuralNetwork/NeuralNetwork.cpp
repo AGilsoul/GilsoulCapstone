@@ -18,7 +18,7 @@ double NeuralNetwork::Neuron::calculate(vector<double> input) {
     return total;
 }
 
-//neural network constructor
+//neural network constructor, takes number of hidden layers + output layer, and neuron counts for each
 NeuralNetwork::NeuralNetwork(int numLayers, vector<int> neurons, double learningRate, double momentum) {
     this->learningRate = learningRate;
     this->momentum = momentum;
@@ -97,8 +97,11 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
             vector<double> nextDeltas;
             //output layer back propagation
             for (unsigned int neuronCount = 0; neuronCount < layers[layers.size() - 1].size();neuronCount++) {
+                //current neuron
                 auto curN = layers[layers.size()- 1][neuronCount];
+                //gets the derivative of the neuron with respect to the expected output
                 curN->delta = finalGradient(curN, desiredResult[neuronCount]);
+                //adds the delta to the nextDeltas vector
                 nextDeltas.push_back(curN->delta);
             }
             //hidden layer backprop for every hidden layer
@@ -107,7 +110,9 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
                 vector<double> tempDeltas;
                 //for every neuron in the hidden layer
                 for (unsigned int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
+                    //current enuron
                     auto curN = layers[layerCount][neuronCount];
+                    //gets the derivative of the neuron with respect to the next layer neurons
                     curN->delta = hiddenGradient(curN, neuronCount, layers[layerCount + 1], nextDeltas);
                     tempDeltas.push_back(curN->delta);
                 }
@@ -121,6 +126,7 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
                     auto curN = layers[layerCount][neuronCount];
                     //updates every weight and previous gradient for the current neuron
                     for (int w = 0; w < curN->weights.size(); w++) {
+                        //gets the derivative of weight adjust with the delta of the current neuron and the inputs
                         double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
                         curN->weights[w] -= result + curN->prevGradients[w] * m;
                         curN->prevGradients[w] = result + curN->prevGradients[w] * m;
@@ -194,26 +200,7 @@ double NeuralNetwork::test(vector<vector<double>>& testData, vector<vector<doubl
     //for every test data point
     for (unsigned int i = 0; i < testData.size(); i++) {
         //gets forward propagation result with current test data point
-        vector<double> tempResult = forwardProp(testData[i]);
-        int maxIndex;
-        double maxVal = 0;
-        //finds highest value index from result
-        for (int x = 0; x < tempResult.size(); x++) {
-            if (tempResult[x] > maxVal) {
-                maxIndex = x;
-                maxVal = tempResult[x];
-            }
-        }
-        vector<double> newResults;
-        //sets highest value index of result equal to 1 and the rest to 0
-        for(int x = 0; x < tempResult.size(); x++) {
-            if (x == maxIndex) {
-                newResults.push_back(1);
-            }
-            else {
-                newResults.push_back(0);
-            }
-        }
+        auto newResults = predictTest(testData[i]);
         bool correct = true;
         //compares predicted answer with actual answer
         for (int x = 0; x < testLabel[i].size(); x++) {
@@ -254,6 +241,29 @@ vector<double> NeuralNetwork::predict(vector<double> unknownP) {
 
 
 //Private Methods
+vector<double> NeuralNetwork::predictTest(vector<double> unknownP) {
+    auto forwardResult = forwardProp(unknownP);
+    vector<double> newResult;
+    int maxIndex;
+    double maxVal = 0;
+    for (int i = 0; i < forwardResult.size(); i++) {
+        if (forwardResult[i] > maxVal) {
+            maxVal = forwardResult[i];
+            maxIndex = i;
+        }
+    }
+    for (int i = 0; i < forwardResult.size(); i++) {
+        if (i == maxIndex) {
+            newResult.push_back(1);
+        }
+        else {
+            newResult.push_back(0);
+        }
+    }
+    return newResult;
+}
+
+
 //sigmoid activation function
 double NeuralNetwork::sigmoid(double input) {
     return 1 / (1 + exp(-input));
