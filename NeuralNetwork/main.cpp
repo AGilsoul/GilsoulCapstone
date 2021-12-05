@@ -15,11 +15,80 @@ using std::ios;
 using std::ifstream;
 using namespace std::chrono;
 
+void cancer_config();
+void mnist_config();
+void readMnistFile(vector<vector<double>>& testData, vector<vector<double>>& expected);
 void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
 void readStrokeFile(vector<vector<double>>& data, vector<vector<double>>& expected);
 
 
 int main() {
+    cancer_config();
+    //mnist_config();
+
+    return 0;
+}
+
+
+void mnist_config() {
+    double learningRate = 0.01;
+    double momentum = 0.9;
+    //number of layers excluding input layer
+    double numLayers = 2;
+    double splitRatio = 0.75;
+    //neuron counts for hidden and output layers
+    vector<int> neuronCounts = {60, 10};
+    //best with 200
+    int iterations = 200;
+    vector<vector<double>> data, expected;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << endl << "Neural Network Prediction of Handwritten Digits" << endl;
+    cout << "********************************************************" << endl << endl;
+    cout << "Constructing Neural Network with " << numLayers - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
+    NeuralNetwork net(numLayers, neuronCounts, learningRate, momentum);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Network construction successful!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Reading data from mnist_train.csv..." << endl;
+    readMnistFile(data, expected);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data collected!" << endl << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Normalizing " << data.size() << " data points for " << data[0].size() << " categories..." << endl;
+    net.normalize(data);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data normalized!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Splitting data with a training:test ratio of "<< splitRatio * 100 << ":" << (1 - splitRatio) * 100 << "..." << endl;
+    auto trainData = net.vectorSplit(data, 0, ceil(data.size() * splitRatio));
+    auto testData = net.vectorSplit(data, ceil(data.size() * splitRatio), data.size() - 1);
+    auto trainExpected = net.vectorSplit(expected, 0, ceil(expected.size() * splitRatio));
+    auto testExpected = net.vectorSplit(expected, ceil(expected.size() * splitRatio), expected.size() - 1);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data split!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
+    net.train(trainData, trainExpected, iterations);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Model training complete!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Testing with " << testData.size() << " data points..." << endl;
+    SetConsoleTextAttribute(hConsole, 10);
+    double testResult = net.test(testData, testExpected);
+    cout << "Testing complete!" << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Percent of correctly identified digits: " << testResult << "%" << endl;
+    cout << endl;
+}
+
+
+void cancer_config() {
     double learningRate = 0.01;
     double momentum = 0.9;
     //number of layers excluding input layer
@@ -27,11 +96,11 @@ int main() {
     double splitRatio = 0.6;
     //neuron counts for hidden and output layers
     vector<int> neuronCounts = {60, 2};
-    int iterations = 100;
+    //best with 200
+    int iterations = 50;
     string fileName = "Breast_Cancer.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << endl << "Neural Network Prediction of Malignancy in Breast Tumors" << endl;
@@ -76,9 +145,52 @@ int main() {
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Percent of correctly identified tumors (malignant/benign): " << testResult << "%" << endl;
     cout << endl;
-    return 0;
 }
 
+
+void readMnistFile(vector<vector<double>>& testData, vector<vector<double>>& expected) {
+    //784 data columns, one label column at beginning
+    //strings to be used for reference and assignment of values when reading the file and assigning to the string list sList
+    string sList[785];
+    for (unsigned int i = 0; i < 785; i++) {
+        string temp = "";
+        sList[i] = temp;
+    }
+    //Reads from the file "Breast_Cancer.csv"
+    ifstream fin("mnist_train.csv", ios::in);
+    vector<string> labels;
+    int listSize = sizeof(sList) / sizeof(sList[0]);
+    while (!fin.eof()) {
+        vector<double> dData;
+        vector<double> result;
+        for (unsigned int i = 0; i < listSize; i++) {
+            if (i != listSize - 1) {
+                getline(fin, sList[i], ',');
+            }
+            else {
+                getline(fin, sList[i], '\n');
+            }
+
+            if (i != 0) {
+                dData.push_back(stod(sList[i]));
+            }
+            else {
+                for (int x = 0; x < 10; x++) {
+                    if (stod(sList[i]) == x) {
+                        result.push_back(1);
+                    }
+                    else {
+                        result.push_back(0);
+                    }
+                }
+            }
+        }
+
+        expected.push_back(result);
+        testData.push_back(dData);
+    }
+    fin.close();
+}
 
 void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName) {
     //strings to be used for reference and assignment of values when reading the file and assigning to the string list sList

@@ -83,7 +83,7 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
     double m = momentum;
     //initialize input neuron weights
     for (unsigned int i = 0; i < layers[0].size(); i++) {
-        initializeWeights(input.size(), layers[0][i], layers[1].size());
+        initializeWeights(input[0].size(), layers[0][i], layers[1].size());
     }
     //for every iteration
     for (unsigned int z = 0; z < iterations; z++) {
