@@ -18,6 +18,7 @@ using namespace std::chrono;
 void test_cancer_config();
 void test_mnist_config();
 void cancer_config();
+void mnist_config();
 void readMnistFile(vector<vector<double>>& testData, vector<vector<double>>& expected);
 void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
 void readStrokeFile(vector<vector<double>>& data, vector<vector<double>>& expected);
@@ -31,7 +32,7 @@ int main() {
     //cancer_config();
 
     //configuration that trains and tests a neural network on handwritten digits
-    //THIS HAS BEEN DISABLED FOR GITHUB, CANT UPLOAD ENOUGH DATA FOR TRAINING
+    //WARNING: TAKES A VERY LONG TIME, JUST LOAD THE PRE-TRAINED NETWORK
     //mnist_config();
 
     //configuration that loads pre-trained neural network for digit recognition
@@ -140,6 +141,63 @@ void test_mnist_config() {
     cout << endl;
 }
 
+void mnist_config() {
+    double learningRate = 0.01;
+    double momentum = 0.9;
+    //number of layers excluding input layer
+    double numLayers = 2;
+    double splitRatio = 0.75;
+    //neuron counts for hidden and output layers
+    vector<int> neuronCounts = {100, 10};
+    //best with 200
+    int iterations = 200;
+    vector<vector<double>> data, expected;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << endl << "Neural Network Prediction of Handwritten Digits" << endl;
+    cout << "********************************************************" << endl << endl;
+    cout << "Constructing Neural Network with " << numLayers - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
+    NeuralNetwork net(numLayers, neuronCounts, learningRate, momentum);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Network construction successful!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Reading data from mnist_train.csv..." << endl;
+    readMnistFile(data, expected);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data collected!" << endl << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Normalizing " << data.size() << " data points for " << data[0].size() << " categories..." << endl;
+    net.normalize(data);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data normalized!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Splitting data with a training:test ratio of "<< splitRatio * 100 << ":" << (1 - splitRatio) * 100 << "..." << endl;
+    auto trainData = net.vectorSplit(data, 0, ceil(data.size() * splitRatio));
+    auto testData = net.vectorSplit(data, ceil(data.size() * splitRatio), data.size() - 1);
+    auto trainExpected = net.vectorSplit(expected, 0, ceil(expected.size() * splitRatio));
+    auto testExpected = net.vectorSplit(expected, ceil(expected.size() * splitRatio), expected.size() - 1);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data split!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
+    net.train(trainData, trainExpected, iterations, true, "mnist_train_config.csv");
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Model training complete!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Testing with " << testData.size() << " data points..." << endl;
+    SetConsoleTextAttribute(hConsole, 10);
+    double testResult = net.test(testData, testExpected);
+    cout << "Testing complete!" << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Percent of correctly identified digits: " << testResult << "%" << endl;
+    cout << endl;
+}
+
 void cancer_config() {
     double learningRate = 0.01;
     double momentum = 0.9;
@@ -206,7 +264,7 @@ void readMnistFile(vector<vector<double>>& testData, vector<vector<double>>& exp
         string temp = "";
         sList[i] = temp;
     }
-    //Reads from the file "Breast_Cancer.csv"
+    //Reads from the file "mnist_train.csv"
     ifstream fin("mnist_train.csv", ios::in);
     vector<string> labels;
     int listSize = sizeof(sList) / sizeof(sList[0]);
@@ -280,161 +338,6 @@ void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& ex
 
         expected.push_back(result);
         testData.push_back(dData);
-    }
-    fin.close();
-}
-
-void readStrokeFile(vector<vector<double>>& data, vector<vector<double>>& expected) {
-    auto rng = std::default_random_engine {};
-    rng.seed(time(nullptr));
-    vector<vector<double>> allData;
-    string id,gender,age,hypertension,heart_disease,ever_married,work_type,Residence_type,avg_glucose_level,bmi,smoking_status,stroke;
-    string sList[] = {id,gender,age,hypertension,heart_disease,ever_married,work_type,Residence_type,avg_glucose_level,bmi,smoking_status,stroke};
-    ifstream fin("healthcare-dataset-stroke-data.csv", ios::in);
-    int listSize = 12;
-    int counter = 0;
-    while (counter < 2000) {
-        counter++;
-        vector<double> tempData;
-        for (int i = 0; i < listSize; i++) {
-            //ID
-            if (i == 0) {
-                std::getline(fin, sList[i], ',');
-                //cout << sList[i] << endl;
-            }
-            //gender
-            else if (i == 1) {
-                std::getline(fin, sList[i], ',');
-                //cout << sList[i] << endl;
-                if (sList[i] == "Male") {
-                    tempData.push_back(1);
-                }
-                else {
-                    tempData.push_back(0);
-                }
-            }
-            //marrital status
-            else if (i == 5) {
-                std::getline(fin, sList[i], ',');
-                //cout << sList[i] << endl;
-                if (sList[i] == "Yes") {
-                    tempData.push_back(1);
-                }
-                else {
-                    tempData.push_back(0);
-                }
-            }
-            //work type
-            else if (i == 6) {
-                std::getline(fin, sList[i], ',');
-                //cout << sList[i] << endl;
-                int index;
-                if (sList[i] == "children") {
-                    index = 0;
-                }
-                else if (sList[i] == "Govt_job") {
-                    index = 1;
-                }
-                else if (sList[i] == "Never_worked") {
-                    index = 2;
-                }
-                else if (sList[i] == "Private") {
-                    index = 3;
-                }
-                else {
-                    index = 4;
-                }
-                for (int x = 0; x < 5; x++) {
-                    if (x == index) {
-                        tempData.push_back(1);
-                    }
-                    else {
-                        tempData.push_back(0);
-                    }
-                }
-            }
-            //residence
-            else if (i == 7) {
-                std::getline(fin, sList[i], ',');
-                //cout << sList[i] << endl;
-                if (sList[i] == "Urban") {
-                    tempData.push_back(1);
-                }
-                else {
-                    tempData.push_back(0);
-                }
-            }
-            //BMI
-            else if (i == 9) {
-                std::getline(fin, sList[i], ',');
-                //cout << sList[i] << endl;
-                if (sList[i] == "N/A") {
-                    tempData.push_back(0);
-                }
-                else {
-                    tempData.push_back(std::stod(sList[i]));
-                }
-            }
-            //smoking
-            else if (i == 10) {
-                std::getline(fin, sList[i], ',');
-                //cout << sList[i] << endl;
-                int index;
-                if (sList[i] == "formerly_smoked") {
-                    index = 0;
-                }
-                else if (sList[i] == "smokes") {
-                    index = 1;
-                }
-                else {
-                    index = 2;
-                }
-                for (int x = 0; x < 3; x++) {
-                    if (x == index) {
-                        tempData.push_back(1);
-                    }
-                    else {
-                        tempData.push_back(0);
-                    }
-                }
-            }
-            else if (i != listSize - 1) {
-                std::getline(fin, sList[i], ',');
-                //cout << sList[i] << endl;
-                tempData.push_back(stod(sList[i]));
-            }
-            else {
-                std::getline(fin, sList[i], '\n');
-                //cout << sList[i] << endl;
-                tempData.push_back(stod(sList[i]));
-            }
-
-        }
-        allData.push_back(tempData);
-    }
-
-    shuffle(begin(allData), end(allData), rng);
-    for (int vec = 0; vec < allData.size(); vec++) {
-        vector<double> newData;
-        vector<double> newExpect;
-        for (int val = 0; val < allData[vec].size(); val++) {
-            if (val != allData[vec].size() - 1) {
-                newData.push_back(allData[vec][val]);
-            }
-            else {
-                if (allData[vec][val] == 0) {
-                    newExpect.push_back(allData[vec][val]);
-                    newExpect.push_back(1);
-                }
-                else {
-                    newExpect.push_back(allData[vec][val]);
-                    newExpect.push_back(0);
-                }
-
-            }
-        }
-        data.push_back(newData);
-        expected.push_back(newExpect);
     }
     fin.close();
 }
