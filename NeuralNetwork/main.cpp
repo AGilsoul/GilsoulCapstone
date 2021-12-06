@@ -15,6 +15,8 @@ using std::ios;
 using std::ifstream;
 using namespace std::chrono;
 
+void test_cancer_config();
+void test_mnist_config();
 void cancer_config();
 void mnist_config();
 void readMnistFile(vector<vector<double>>& testData, vector<vector<double>>& expected);
@@ -23,12 +25,128 @@ void readStrokeFile(vector<vector<double>>& data, vector<vector<double>>& expect
 
 
 int main() {
-    cancer_config();
+    //configuration that loads pre-trained neural network for breast tumors
+    //test_cancer_config();
+
+    //configuration that trains and tests a neural network on breast tumors
+    //cancer_config();
+
+    //configuration that trains and tests a neural network on handwritten digits
+    //WARNING: TAKES A VERY LONG TIME, JUST LOAD THE PRE-TRAINED NETWORK
     //mnist_config();
+
+    //configuration that loads pre-trained neural network for digit recognition
+    test_mnist_config();
 
     return 0;
 }
 
+void test_cancer_config() {
+    double splitRatio = 0.6;
+    //best with 200
+    int iterations = 50;
+    string fileName = "/datasets/Breast_Cancer.csv";
+    vector<vector<double>> data, expected;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << endl << "Neural Network Prediction of Malignancy in Breast Tumors" << endl;
+    cout << "********************************************************" << endl << endl;
+    cout << "Loading Neural Network..." << endl;
+    NeuralNetwork net("nn_cancer_config.csv");
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Network construction successful!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Reading data from " << fileName << "..." << endl;
+    readCancerFile(data, expected, fileName);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data collected!" << endl << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Normalizing data..." << endl;
+    net.normalize(data);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data normalized!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Splitting data with a training:test ratio of "<< splitRatio * 100 << ":" << (1 - splitRatio) * 100 << "..." << endl;
+    auto trainData = net.vectorSplit(data, 0, ceil(data.size() * splitRatio));
+    auto testData = net.vectorSplit(data, ceil(data.size() * splitRatio), data.size() - 1);
+    auto trainExpected = net.vectorSplit(expected, 0, ceil(expected.size() * splitRatio));
+    auto testExpected = net.vectorSplit(expected, ceil(expected.size() * splitRatio), expected.size() - 1);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data split!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Testing with " << testData.size() << " data points..." << endl;
+    SetConsoleTextAttribute(hConsole, 10);
+    double testResult = net.test(testData, testExpected);
+    cout << "Testing complete!" << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Percent of correctly identified tumors (malignant/benign): " << testResult << "%" << endl;
+    cout << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
+    net.train(trainData, trainExpected, iterations, true, "nn_cancer_config.csv");
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Model training complete!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Testing with " << testData.size() << " data points..." << endl;
+    SetConsoleTextAttribute(hConsole, 10);
+    testResult = net.test(testData, testExpected);
+    cout << "Testing complete!" << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Percent of correctly identified tumors (malignant/benign): " << testResult << "%" << endl;
+    cout << endl;
+}
+
+void test_mnist_config() {
+    double splitRatio = 0.75;
+    //best with 200
+    //int iterations = 200;
+    string fileName = "mnist_train_config.csv";
+    vector<vector<double>> data, expected;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << endl << "Neural Network Prediction of Handwritten Digits" << endl;
+    cout << "********************************************************" << endl << endl;
+    cout << "Loading neural network from " << fileName << "..." << endl;
+    NeuralNetwork net(fileName);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Network construction successful!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Reading data from mnist_train.csv..." << endl;
+    readMnistFile(data, expected);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data collected!" << endl << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Normalizing " << data.size() << " data points for " << data[0].size() << " categories..." << endl;
+    net.normalize(data);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data normalized!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Splitting data with a training:test ratio of "<< splitRatio * 100 << ":" << (1 - splitRatio) * 100 << "..." << endl;
+    auto trainData = net.vectorSplit(data, 0, ceil(data.size() * splitRatio));
+    auto testData = net.vectorSplit(data, ceil(data.size() * splitRatio), data.size() - 1);
+    auto trainExpected = net.vectorSplit(expected, 0, ceil(expected.size() * splitRatio));
+    auto testExpected = net.vectorSplit(expected, ceil(expected.size() * splitRatio), expected.size() - 1);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data split!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Testing with " << testData.size() << " data points..." << endl;
+    SetConsoleTextAttribute(hConsole, 10);
+    double testResult = net.test(testData, testExpected);
+    cout << "Testing complete!" << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Percent of correctly identified digits: " << testResult << "%" << endl;
+    cout << endl;
+}
 
 void mnist_config() {
     double learningRate = 0.01;
@@ -37,7 +155,7 @@ void mnist_config() {
     double numLayers = 2;
     double splitRatio = 0.75;
     //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {60, 10};
+    vector<int> neuronCounts = {100, 10};
     //best with 200
     int iterations = 200;
     vector<vector<double>> data, expected;
@@ -73,7 +191,7 @@ void mnist_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
-    net.train(trainData, trainExpected, iterations);
+    net.train(trainData, trainExpected, iterations, true, "mnist_train_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
 
@@ -86,7 +204,6 @@ void mnist_config() {
     cout << "Percent of correctly identified digits: " << testResult << "%" << endl;
     cout << endl;
 }
-
 
 void cancer_config() {
     double learningRate = 0.01;
@@ -101,7 +218,6 @@ void cancer_config() {
     string fileName = "Breast_Cancer.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
     SetConsoleTextAttribute(hConsole, 15);
     cout << endl << "Neural Network Prediction of Malignancy in Breast Tumors" << endl;
     cout << "********************************************************" << endl << endl;
@@ -133,7 +249,7 @@ void cancer_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
-    net.train(trainData, trainExpected, iterations);
+    net.train(trainData, trainExpected, iterations, true, "nn_cancer_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
 
@@ -146,7 +262,6 @@ void cancer_config() {
     cout << "Percent of correctly identified tumors (malignant/benign): " << testResult << "%" << endl;
     cout << endl;
 }
-
 
 void readMnistFile(vector<vector<double>>& testData, vector<vector<double>>& expected) {
     //784 data columns, one label column at beginning

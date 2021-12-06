@@ -41,8 +41,12 @@ NeuralNetwork::NeuralNetwork(int numLayers, vector<int> neurons, double learning
     }
 }
 
+NeuralNetwork::NeuralNetwork(string fileName) {
+    loadData(fileName);
+}
+
 //min-max data normalization method
-void NeuralNetwork::normalize(vector<vector<double>>& input) {
+void NeuralNetwork::normalize(vector<vector<double>>& input, bool save, string fileName) {
     if (!conversions) {
         for (unsigned int p = 0; p < input[0].size(); p++) {
             vector<double> curData;
@@ -77,13 +81,82 @@ void NeuralNetwork::normalize(vector<vector<double>>& input) {
     }
 }
 
+//loads saved weight data
+void NeuralNetwork::loadData(string fileName) {
+    ifstream fin(fileName, ios::in);
+    string numLayers, nPL, lr, m;
+    //gets learning rate
+    std::getline(fin, lr, ',');
+    learningRate = stod(lr);
+    //gets momentum
+    std::getline(fin, m, '\n');
+    momentum = stod(m);
+    //gets number of layers
+    std::getline(fin, numLayers, '\n');
+    vector<int> neuronsPerLayer;
+    //gets neuron counts for each layer
+    for (unsigned int i = 0; i < stoi(numLayers) - 1; i++) {
+        std::getline(fin, nPL, ',');
+        neuronsPerLayer.push_back(stoi(nPL));
+    }
+    std::getline(fin, nPL, '\n');
+    neuronsPerLayer.push_back(stoi(nPL));
+    //for every neuron, gets weight count and weights
+    vector<vector<Neuron*>> newLayers;
+    for (int curLayer = 0; curLayer < neuronsPerLayer.size(); curLayer++) {
+        vector<Neuron*> tempLayer;
+        for (int curNeuron = 0; curNeuron < neuronsPerLayer[curLayer]; curNeuron++) {
+            Neuron* tempNeuron = new Neuron;
+            string numWeights;
+            std::getline(fin, numWeights, '\n');
+            vector<double> tempWeights;
+            vector<double> tempGrads;
+            string newWeight;
+            for (int weightCount = 0; weightCount < stoi(numWeights) - 1; weightCount++) {
+
+                std::getline(fin, newWeight, ',');
+                tempWeights.push_back(stod(newWeight));
+                tempGrads.push_back(0);
+            }
+            std::getline(fin, newWeight, '\n');
+            tempWeights.push_back(stod(newWeight));
+            tempGrads.push_back(0);
+            tempNeuron->weights = tempWeights;
+            tempNeuron->prevGradients = tempGrads;
+            std::getline(fin, newWeight, '\n');
+            tempNeuron->bias = stod(newWeight);
+            tempNeuron->prevBias = 0;
+            tempLayer.push_back(tempNeuron);
+        }
+        newLayers.push_back(tempLayer);
+    }
+    string numCov;
+    std::getline(fin, numCov, '\n');
+    vector<vector<double>> tempCovs;
+    string newVal;
+    for (int i = 0; i < stod(numCov); i++) {
+        vector<double> newCov;
+        std::getline(fin, newVal, ',');
+        newCov.push_back(stod(newVal));
+        std::getline(fin, newVal, '\n');
+        newCov.push_back(stod(newVal));
+        tempCovs.push_back(newCov);
+    }
+    conversionRates = tempCovs;
+    layers = newLayers;
+    loadedData = true;
+    conversions = true;
+}
+
 //back propagation method, repeats for every iteration
-void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations) {
+void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, bool save, string fileName) {
     double lr = learningRate;
     double m = momentum;
     //initialize input neuron weights
-    for (unsigned int i = 0; i < layers[0].size(); i++) {
-        initializeWeights(input[0].size(), layers[0][i], layers[1].size());
+    if (!loadedData) {
+        for (unsigned int i = 0; i < layers[0].size(); i++) {
+            initializeWeights(input[0].size(), layers[0][i], layers[1].size());
+        }
     }
     //for every iteration
     for (unsigned int z = 0; z < iterations; z++) {
@@ -137,6 +210,18 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
                     curN->prevBias = bResult + curN->prevBias * m;
                 }
             }
+        }
+    }
+    loadedData = true;
+    //save weight data
+    if (save) {
+        cout << "Saving data..." << endl;
+        bool saveSuccess = saveData(fileName);
+        if (saveSuccess) {
+            cout << "Data saved successfully as " << fileName << endl;
+        }
+        else {
+            cout << "Failed to save data" << endl;
         }
     }
 }
@@ -196,22 +281,24 @@ vector<vector<double>> NeuralNetwork::vectorSplit(vector<vector<double>> vec, in
 
 //testing method, compares predicted results after training with actual results
 double NeuralNetwork::test(vector<vector<double>>& testData, vector<vector<double>>& testLabel) {
-    double accuracy = 0;
-    //for every test data point
-    for (unsigned int i = 0; i < testData.size(); i++) {
-        //gets forward propagation result with current test data point
-        auto newResults = predictTest(testData[i]);
-        bool correct = true;
-        //compares predicted answer with actual answer
-        for (int x = 0; x < testLabel[i].size(); x++) {
-            if (newResults[x] != testLabel[i][x]) {
-                correct = false;
+    if (layers[layers.size() - 1].size() > 1) {
+        double accuracy = 0;
+        //for every test data point
+        for (unsigned int i = 0; i < testData.size(); i++) {
+            //gets forward propagation result with current test data point
+            auto newResults = predictTest(testData[i]);
+            bool correct = true;
+            //compares predicted answer with actual answer
+            for (int x = 0; x < testLabel[i].size(); x++) {
+                if (newResults[x] != testLabel[i][x]) {
+                    correct = false;
+                }
             }
-        }
-        if (correct) { accuracy++; }
+            if (correct) { accuracy++; }
 
+        }
+        return accuracy / testData.size() * 100;
     }
-    return accuracy / testData.size() * 100;
 }
 
 //Method for predicting a vector representing an unknown data point
@@ -219,6 +306,9 @@ vector<double> NeuralNetwork::predict(vector<double> unknownP) {
     vector<vector<double>> reformatUnknown = {unknownP};
     normalize(reformatUnknown);
     auto forwardResult = forwardProp(reformatUnknown[0]);
+    if (layers[layers.size() - 1].size() == 1) {
+        return forwardResult;
+    }
     vector<double> newResult;
     int maxIndex;
     double maxVal = 0;
@@ -243,6 +333,9 @@ vector<double> NeuralNetwork::predict(vector<double> unknownP) {
 //Private Methods
 vector<double> NeuralNetwork::predictTest(vector<double> unknownP) {
     auto forwardResult = forwardProp(unknownP);
+    if (layers[layers.size() - 1].size() == 1) {
+        return forwardResult;
+    }
     vector<double> newResult;
     int maxIndex;
     double maxVal = 0;
@@ -261,6 +354,7 @@ vector<double> NeuralNetwork::predictTest(vector<double> unknownP) {
         }
     }
     return newResult;
+
 }
 
 
@@ -347,6 +441,47 @@ vector<double> NeuralNetwork::sortVector(vector<double> vec) {
         }
     }
     return sortedData;
+}
+
+//saves weight data to csv file called "nn_save_config.csv"
+bool NeuralNetwork::saveData(string fileName) {
+    ofstream saveFile(fileName);
+    if (saveFile) {
+        //writes learning rate and momentum
+        saveFile << learningRate << "," << momentum << "\n";
+        //writes number of layers to the top
+        saveFile << layers.size() << "\n";
+        //writes neuron counts for each layer to the top
+        for (unsigned int lCount = 0; lCount < layers.size() - 1; lCount++) {
+            saveFile << layers[lCount].size() << ",";
+        }
+        saveFile << layers[layers.size() - 1].size() << "\n";
+        for (unsigned int lCount = 0; lCount < layers.size(); lCount++) {
+            //writes number of weights and weights underneath
+            for (unsigned int nCount = 0; nCount < layers[lCount].size(); nCount++) {
+                auto curN = layers[lCount][nCount];
+                saveFile << curN->weights.size() << "\n";
+                for (unsigned int wCount = 0; wCount < curN->weights.size() - 1; wCount++) {
+                    saveFile << curN->weights[wCount] << ",";
+                }
+                saveFile << curN->weights[curN->weights.size() - 1] << "\n";
+                saveFile << curN->bias << "\n";
+            }
+        }
+
+        int conversionSize = conversionRates.size();
+        saveFile << conversionSize << "\n";
+        for (int i = 0; i < conversionSize - 1; i++) {
+            saveFile << conversionRates[i][0] << "," << conversionRates[i][1] << "\n";
+        }
+        saveFile << conversionRates[conversionSize - 1][0] << "," << conversionRates[conversionSize - 1][1];
+
+
+        saveFile.close();
+
+        return true;
+    }
+    return false;
 }
 
 
