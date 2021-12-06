@@ -18,7 +18,6 @@ using namespace std::chrono;
 void test_cancer_config();
 void test_mnist_config();
 void cancer_config();
-void mnist_config();
 void readMnistFile(vector<vector<double>>& testData, vector<vector<double>>& expected);
 void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
 void readStrokeFile(vector<vector<double>>& data, vector<vector<double>>& expected);
@@ -32,7 +31,7 @@ int main() {
     //cancer_config();
 
     //configuration that trains and tests a neural network on handwritten digits
-    //WARNING: TAKES A VERY LONG TIME, JUST LOAD THE PRE-TRAINED NETWORK
+    //THIS HAS BEEN DISABLED FOR GITHUB, CANT UPLOAD ENOUGH DATA FOR TRAINING
     //mnist_config();
 
     //configuration that loads pre-trained neural network for digit recognition
@@ -103,7 +102,6 @@ void test_cancer_config() {
 }
 
 void test_mnist_config() {
-    double splitRatio = 0.75;
     //best with 200
     //int iterations = 200;
     string fileName = "mnist_train_config.csv";
@@ -129,71 +127,8 @@ void test_mnist_config() {
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data normalized!" << endl << endl;
 
-    SetConsoleTextAttribute(hConsole, 15);
-    cout << "Splitting data with a training:test ratio of "<< splitRatio * 100 << ":" << (1 - splitRatio) * 100 << "..." << endl;
-    auto trainData = net.vectorSplit(data, 0, ceil(data.size() * splitRatio));
-    auto testData = net.vectorSplit(data, ceil(data.size() * splitRatio), data.size() - 1);
-    auto trainExpected = net.vectorSplit(expected, 0, ceil(expected.size() * splitRatio));
-    auto testExpected = net.vectorSplit(expected, ceil(expected.size() * splitRatio), expected.size() - 1);
-    SetConsoleTextAttribute(hConsole, 10);
-    cout << "Data split!" << endl << endl;
-
-    SetConsoleTextAttribute(hConsole, 15);
-    cout << "Testing with " << testData.size() << " data points..." << endl;
-    SetConsoleTextAttribute(hConsole, 10);
-    double testResult = net.test(testData, testExpected);
-    cout << "Testing complete!" << endl;
-    SetConsoleTextAttribute(hConsole, 15);
-    cout << "Percent of correctly identified digits: " << testResult << "%" << endl;
-    cout << endl;
-}
-
-void mnist_config() {
-    double learningRate = 0.01;
-    double momentum = 0.9;
-    //number of layers excluding input layer
-    double numLayers = 2;
-    double splitRatio = 0.75;
-    //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {100, 10};
-    //best with 200
-    int iterations = 200;
-    vector<vector<double>> data, expected;
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    SetConsoleTextAttribute(hConsole, 15);
-    cout << endl << "Neural Network Prediction of Handwritten Digits" << endl;
-    cout << "********************************************************" << endl << endl;
-    cout << "Constructing Neural Network with " << numLayers - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
-    NeuralNetwork net(numLayers, neuronCounts, learningRate, momentum);
-    SetConsoleTextAttribute(hConsole, 10);
-    cout << "Network construction successful!" << endl << endl;
-
-    SetConsoleTextAttribute(hConsole, 15);
-    cout << "Reading data from mnist_train.csv..." << endl;
-    readMnistFile(data, expected);
-    SetConsoleTextAttribute(hConsole, 10);
-    cout << "Data collected!" << endl << endl;
-    SetConsoleTextAttribute(hConsole, 15);
-    cout << "Normalizing " << data.size() << " data points for " << data[0].size() << " categories..." << endl;
-    net.normalize(data);
-    SetConsoleTextAttribute(hConsole, 10);
-    cout << "Data normalized!" << endl << endl;
-
-    SetConsoleTextAttribute(hConsole, 15);
-    cout << "Splitting data with a training:test ratio of "<< splitRatio * 100 << ":" << (1 - splitRatio) * 100 << "..." << endl;
-    auto trainData = net.vectorSplit(data, 0, ceil(data.size() * splitRatio));
-    auto testData = net.vectorSplit(data, ceil(data.size() * splitRatio), data.size() - 1);
-    auto trainExpected = net.vectorSplit(expected, 0, ceil(expected.size() * splitRatio));
-    auto testExpected = net.vectorSplit(expected, ceil(expected.size() * splitRatio), expected.size() - 1);
-    SetConsoleTextAttribute(hConsole, 10);
-    cout << "Data split!" << endl << endl;
-
-    SetConsoleTextAttribute(hConsole, 15);
-    cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
-    net.train(trainData, trainExpected, iterations, true, "mnist_train_config.csv");
-    SetConsoleTextAttribute(hConsole, 10);
-    cout << "Model training complete!" << endl << endl;
+    auto testData = data;
+    auto testExpected = expected;
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Testing with " << testData.size() << " data points..." << endl;
