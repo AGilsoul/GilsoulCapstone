@@ -45,7 +45,7 @@ void test_cancer_config() {
     double splitRatio = 0.6;
     //best with 200
     int iterations = 50;
-    string fileName = "/datasets/Breast_Cancer.csv";
+    string fileName = "Breast_Cancer.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
