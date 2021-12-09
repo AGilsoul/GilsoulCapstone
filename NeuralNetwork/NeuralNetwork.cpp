@@ -19,9 +19,10 @@ double NeuralNetwork::Neuron::calculate(vector<double> input) {
 }
 
 //neural network constructor, takes number of hidden layers + output layer, and neuron counts for each
-NeuralNetwork::NeuralNetwork(int numLayers, vector<int> neurons, double learningRate, double momentum) {
+NeuralNetwork::NeuralNetwork(vector<int> neurons, double learningRate, double momentum) {
     this->learningRate = learningRate;
     this->momentum = momentum;
+    int numLayers = neurons.size();
     uint64_t timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed>>32)};
     rng.seed(ss);
@@ -46,25 +47,46 @@ NeuralNetwork::NeuralNetwork(string fileName) {
 }
 
 //min-max data normalization method
-void NeuralNetwork::normalize(vector<vector<double>>& input, bool save, string fileName) {
+void NeuralNetwork::normalize(vector<vector<double>>& input, vector<double> minMaxRange, bool save, string fileName) {
     if (!conversions) {
-        for (unsigned int p = 0; p < input[0].size(); p++) {
-            vector<double> curData;
-            for (auto &i: input) {
-                curData.push_back(i[p]);
-            }
-            auto sortedData = sortVector(curData);
-            double min = sortedData[0];
-            double max = sortedData[sortedData.size() - 1];
-            for (auto &i: input) {
-                i[p] = (i[p] - min) / (max - min);
-                if (std::isnan(i[p])) {
-                    i[p] = 0;
+        if (minMaxRange.size() > 0) {
+            for (unsigned int p = 0; p < input[0].size(); p++) {
+                vector<double> curData;
+                for (auto &i: input) {
+                    curData.push_back(i[p]);
                 }
+                double min = minMaxRange[0];
+                double max = minMaxRange[1];
+                for (auto &i: input) {
+                    i[p] = (i[p] - min) / (max - min);
+                    if (std::isnan(i[p])) {
+                        i[p] = 0;
+                    }
+                }
+                vector<double> tempFactors = {min, max};
+                conversionRates.push_back(tempFactors);
             }
-            vector<double> tempFactors = {min, max};
-            conversionRates.push_back(tempFactors);
         }
+        else {
+            for (unsigned int p = 0; p < input[0].size(); p++) {
+                vector<double> curData;
+                for (auto &i: input) {
+                    curData.push_back(i[p]);
+                }
+                auto sortedData = sortVector(curData);
+                double min = sortedData[0];
+                double max = sortedData[sortedData.size() - 1];
+                for (auto &i: input) {
+                    i[p] = (i[p] - min) / (max - min);
+                    if (std::isnan(i[p])) {
+                        i[p] = 0;
+                    }
+                }
+                vector<double> tempFactors = {min, max};
+                conversionRates.push_back(tempFactors);
+            }
+        }
+
         conversions = true;
 
 
@@ -226,6 +248,102 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
     }
 }
 
+void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int epochs, bool save, string fileName) {
+    double lr = learningRate;
+    double m = momentum;
+    epochs += 1;
+    //initialize input neuron weights
+    if (!loadedData) {
+        for (unsigned int i = 0; i < layers[0].size(); i++) {
+            initializeWeights(input[0].size(), layers[0][i], layers[1].size());
+        }
+    }
+    //for every iteration
+    for (unsigned int z = 0; z < iterations; z++) {
+        vector<vector<vector<double>>> batches;
+        vector<vector<vector<double>>> batchResults;
+        vector<int> indexes;
+        indexes.reserve(input.size());
+        for (int i = 0; i < input.size(); ++i)
+            indexes.push_back(i);
+        std::random_shuffle(indexes.begin(), indexes.end());
+
+        int batchSize = floor(input.size() / epochs);
+        //for every batch
+        for (unsigned int i = 0; i < epochs - 1; i++) {
+            vector<vector<double>> curBatch;
+            vector<vector<double>> curResults;
+            for (unsigned int x = i * batchSize; x < (i * batchSize) + batchSize; x++) {
+                curBatch.push_back(input[indexes[i]]);
+                curResults.push_back(allResults[indexes[i]]);
+            }
+            batches.push_back(curBatch);
+            batchResults.push_back(curResults);
+        }
+        //for every batch
+        for (unsigned int batchCount = 0; batchCount < batches.size(); batchCount++) {
+            //reset neuron deltas
+            for (int la = 0; la < layers.size(); la++) {
+                for (int na = 0; na < layers[la].size(); na++) {
+                    layers[la][na]->delta = 0;
+                }
+            }
+            //for every training data point
+            for (unsigned int x = 0; x < batches[batchCount].size(); x++) {
+                //gets the actual result of the current data point
+                auto desiredResult = batchResults[batchCount][x];
+                //gets predicted result from forward propagation
+                vector<double> finalResult = forwardProp(batches[batchCount][x]);
+                //sets up the nextDelta variables for the hidden layers
+                vector<double> nextDeltas;
+                //output layer back propagation
+                for (unsigned int neuronCount = 0; neuronCount < layers[layers.size() - 1].size(); neuronCount++) {
+                    //current neuron
+                    auto curN = layers[layers.size() - 1][neuronCount];
+                    //gets the derivative of the neuron with respect to the expected output
+                    curN->delta += finalGradient(curN, desiredResult[neuronCount]);
+                    //adds the delta to the nextDeltas vector
+                    nextDeltas.push_back(curN->delta);
+                }
+                //hidden layer backprop for every hidden layer
+                for (int layerCount = layers.size() - 2; layerCount >= 0; layerCount--) {
+                    //tempDeltas vector, will be the nextDeltas vector for the previous layer
+                    vector<double> tempDeltas;
+                    //for every neuron in the hidden layer
+                    for (unsigned int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
+                        //current enuron
+                        auto curN = layers[layerCount][neuronCount];
+                        //gets the derivative of the neuron with respect to the next layer neurons
+                        curN->delta += hiddenGradient(curN, neuronCount, layers[layerCount + 1], nextDeltas);
+                        tempDeltas.push_back(curN->delta);
+                    }
+                    nextDeltas = tempDeltas;
+                }
+            }
+            //updating weights in every layer
+            for (int layerCount = layers.size() - 1; layerCount >= 0; layerCount--) {
+                //for every neuron in the layer
+                for (unsigned int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
+                    auto curN = layers[layerCount][neuronCount];
+                    curN->delta /= batchSize;
+                    //updates every weight and previous gradient for the current neuron
+                    for (int w = 0; w < curN->weights.size(); w++) {
+                        //gets the derivative of weight adjust with the delta of the current neuron and the inputs
+                        double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
+                        curN->weights[w] -= result + curN->prevGradients[w] * m;
+                        curN->prevGradients[w] = result + curN->prevGradients[w] * m;
+                    }
+                    //updates bias and previous bias for the current neuron
+                    double bResult = curN->delta * lr;
+                    curN->bias -= bResult + curN->prevBias * m;
+                    curN->prevBias = bResult + curN->prevBias * m;
+                }
+            }
+        }
+    }
+}
+
+
 //forward propagation method
 vector<double> NeuralNetwork::forwardProp(vector<double> input) {
     auto data = input;
@@ -254,8 +372,14 @@ vector<double> NeuralNetwork::forwardProp(vector<double> input) {
         double neuronResult = tempNPointer->calculate(data);
         tempNPointer->prevInputs = data;
         tempNPointer->output = neuronResult;
-        //adds sigmoid activation of neuron result to layer results vector
-        newLayerResults.push_back(sigmoid(neuronResult));
+        if (layers[layers.size() - 1].size() == 1) {
+            newLayerResults.push_back(neuronResult);
+        }
+        else {
+            //adds sigmoid activation of neuron result to layer results vector
+            newLayerResults.push_back(sigmoid(neuronResult));
+        }
+
     }
     data = newLayerResults;
     return data;
@@ -299,6 +423,14 @@ double NeuralNetwork::test(vector<vector<double>>& testData, vector<vector<doubl
         }
         return accuracy / testData.size() * 100;
     }
+    else {
+        double totalError = 0;
+        for (unsigned int i = 0; i < testData.size(); i++) {
+            auto result = predictTest(testData[i]);
+            totalError += pow((result[0] - testLabel[i][0]), 2);
+        }
+        return totalError / testData.size();
+    }
 }
 
 //Method for predicting a vector representing an unknown data point
@@ -329,6 +461,39 @@ vector<double> NeuralNetwork::predict(vector<double> unknownP) {
     return newResult;
 }
 
+void NeuralNetwork::resetWeights(int dataCount) {
+    for (int lc = 0; lc < layers.size(); lc++) {
+        //normalized xavier weight initialization
+        int numOut = layers[lc].size();
+        int numWeights;
+        if (lc == 0) {
+            numWeights = dataCount;
+        }
+        else {
+            numWeights = layers[lc - 1].size();
+        }
+        std::uniform_real_distribution<double> unif(-1 * sqrt(6.0) / sqrt(numWeights + numOut), sqrt(6.0) / sqrt(numWeights + numOut));
+        for (int n = 0; n < layers[lc].size(); n++) {
+            auto newN = layers[lc][n];
+            numWeights = newN->weights.size();
+            bool notZero;
+            for (unsigned int i = 0; i < numWeights; i++) {
+                notZero = false;
+                double value;
+                while (!notZero) {
+                    value = unif(rng);
+                    if (value != 0 && !std::isnan(value)) {
+                        notZero = true;
+                    }
+                }
+                newN->weights[i] = value;
+                newN->prevGradients[i] = 0;
+            }
+            newN->prevBias = 0;
+            newN->delta = 0;
+        }
+    }
+}
 
 //Private Methods
 vector<double> NeuralNetwork::predictTest(vector<double> unknownP) {
@@ -354,7 +519,6 @@ vector<double> NeuralNetwork::predictTest(vector<double> unknownP) {
         }
     }
     return newResult;
-
 }
 
 
@@ -402,7 +566,10 @@ void NeuralNetwork::initializeWeights(int numWeights, Neuron* newN, double numOu
         newN->prevGradients.push_back(0);
     }
     newN->prevBias = 0;
+    newN->delta = 0;
 }
+
+
 
 //gradient descent method for final layer
 double NeuralNetwork::finalGradient(Neuron* curN, double expected) {

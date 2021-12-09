@@ -10,6 +10,7 @@
 #include <fstream>
 #include <cmath>
 #include <random>
+#include <algorithm>
 #include <chrono>
 
 using std::vector;
@@ -36,16 +37,24 @@ public:
         double calculate(vector<double> input);
     };
 
-    NeuralNetwork(int numLayers, vector<int> neurons, double learningRate = 0.01, double momentum = 0.9);
+    NeuralNetwork(vector<int> neurons, double learningRate = 0.01, double momentum = 0.9);
     NeuralNetwork(string fileName = "");
-    void normalize(vector<vector<double>>& input, bool save = false, string fileName = "");
+    void normalize(vector<vector<double>>& input, vector<double> minMaxRange = {}, bool save = false, string fileName = "");
     void loadData(string fileName);
     void train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, bool save = false, string fileName = "");
+    void trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int epochs, bool save = false, string fileName = "");
     vector<double> forwardProp(vector<double> input);
     static void printVector(vector<double> input);
     vector<vector<double>> vectorSplit(vector<vector<double>> vec, int start, int fin);
     double test(vector<vector<double>>& testData, vector<vector<double>>& testLabel);
     vector<double> predict(vector<double> unknownP);
+    void resetWeights(int inputCount);
+    void setMomentum(double m) {
+        this->momentum = m;
+    }
+    void setLR(double lr) {
+        this->learningRate = lr;
+    }
 
 private:
 
