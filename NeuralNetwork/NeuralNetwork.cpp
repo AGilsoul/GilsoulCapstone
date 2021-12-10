@@ -642,8 +642,6 @@ bool NeuralNetwork::saveData(string fileName) {
             saveFile << conversionRates[i][0] << "," << conversionRates[i][1] << "\n";
         }
         saveFile << conversionRates[conversionSize - 1][0] << "," << conversionRates[conversionSize - 1][1];
-
-
         saveFile.close();
 
         return true;

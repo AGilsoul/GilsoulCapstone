@@ -25,6 +25,11 @@ using std::ios;
 
 class NeuralNetwork {
 public:
+    /***
+     * Neuron Struct
+     * Contains weights and bias for one neuron in the neural network
+     * Calculates output using output from previous layer as input
+     */
     struct Neuron {
         Neuron() { bias = 0; }
         vector<double> weights;
@@ -37,8 +42,29 @@ public:
         double calculate(vector<double> input);
     };
 
+    /***
+     * Constructor for a new neural network
+     * @param neurons vector containing the number of neurons for each hidden layer and the output layer
+     * @param learningRate learning rate of the model
+     * @param momentum momentum of the model
+     */
     NeuralNetwork(vector<int> neurons, double learningRate = 0.01, double momentum = 0.9);
+
+    /***
+     * Constructor for loading in a new neural network
+     * @param fileName name of the configuration file to be loaded
+     */
     NeuralNetwork(string fileName = "");
+
+    /***
+     * Normalizes input data
+     * If every data characteristic uses the same range, minMaxRange can be specified to speed up the process
+     * This is useful for processing data from inputs such as greyscale pictures, where each characteristic is 0-255
+     * @param input input data
+     * @param minMaxRange vector containing minimum and maximum data values for all categories
+     * @param save set to true when the user wants to save a configuration file for the normalization ranges
+     * @param fileName file name of the normalization range file
+     */
     void normalize(vector<vector<double>>& input, vector<double> minMaxRange = {}, bool save = false, string fileName = "");
     void loadData(string fileName);
     void train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, bool save = false, string fileName = "");
