@@ -32,7 +32,7 @@ int main() {
     //test_cancer_config();
 
     //configuration that trains a neural network using mini-batch gd instead of stochastic gd
-    //cancer_minibatch_config();
+    cancer_minibatch_config();
 
     //configuration that trains and tests a neural network on breast tumors
     //cancer_config();
@@ -42,7 +42,7 @@ int main() {
     //mnist_config();
 
     //configuration that loads pre-trained neural network for digit recognition, and retrains with mini-batch gradient descent
-    test_mnist_config();
+    //test_mnist_config();
 
     //regression configuration that trains a neural network on residential structure data and predicts cooling load
     //energy_config();
@@ -128,7 +128,7 @@ void test_cancer_config() {
 
 void test_mnist_config() {
     //train:test split
-    double splitRatio = 0.5;
+    double splitRatio = 0.6;
     string fileName = "mnist_train_config.csv";
     vector<vector<double>> data, expected;
 
@@ -188,15 +188,16 @@ void test_mnist_config() {
     cout << "Mini-batch Training Analysis" << endl;
     cout << "********************************************************" << endl << endl;
     net.resetWeights(trainData.size());
-    cout << "Pre-training accuracy: " << net.test(testData, testExpected);
+    cout << "Pre-training accuracy: " << net.test(testData, testExpected) << "%";
     cout << endl << "Training (This Could Take a Few Minutes)..." << endl;
-    net.setLR(0.001);
+    net.setLR(0.01);
     net.setMomentum(0.9);
-    net.trainMiniBatch(trainData, trainExpected, 50, 2048);
+    net.trainMiniBatch(trainData, trainExpected, 40, 4);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Training Complete!" << endl << endl;
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Post-training accuracy: " << net.test(testData, testExpected) << endl;
+    cout << "Post-training validation accuracy: " << net.test(trainData, trainExpected) << "%" << endl;
+    cout << "Post-training accuracy: " << net.test(testData, testExpected) << "%" << endl;
 
 }
 
@@ -263,8 +264,8 @@ void mnist_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Testing with " << testData.size() << " data points..." << endl;
-    SetConsoleTextAttribute(hConsole, 10);
     double testResult = net.test(testData, testExpected);
+    SetConsoleTextAttribute(hConsole, 10);
     cout << "Testing complete!" << endl;
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Percent of correctly identified digits: " << testResult << "%" << endl;
@@ -328,7 +329,7 @@ void cancer_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
-    net.train(trainData, trainExpected, iterations, true, "nn_cancer_config.csv");
+    net.train(trainData, trainExpected, iterations, false, "nn_cancer_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
 
@@ -348,9 +349,10 @@ void cancer_minibatch_config() {
     //number of layers excluding input layer
     double splitRatio = 0.6;
     //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {30, 2};
+    vector<int> neuronCounts = {15, 2};
     //best with 200
     int iterations = 200;
+    int batchSize = 2;
     string fileName = "Breast_Cancer.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -399,9 +401,18 @@ void cancer_minibatch_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
-    net.trainMiniBatch(trainData, trainExpected, iterations, 32);
+    net.trainMiniBatch(trainData, trainExpected, iterations, batchSize);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Validating with " << trainData.size() << " data points..." << endl;
+    SetConsoleTextAttribute(hConsole, 10);
+    double validationResult = net.test(trainData, trainExpected);
+    cout << "Testing complete!" << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Percent of correctly identified tumors (malignant/benign): " << validationResult << "%" << endl;
+    cout << endl;
+
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Testing with " << testData.size() << " data points..." << endl;

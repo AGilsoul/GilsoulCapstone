@@ -19,9 +19,11 @@ double NeuralNetwork::Neuron::calculate(vector<double> input) {
 }
 
 //neural network constructor, takes number of hidden layers + output layer, and neuron counts for each
-NeuralNetwork::NeuralNetwork(vector<int> neurons, double learningRate, double momentum) {
+NeuralNetwork::NeuralNetwork(vector<int> neurons, double learningRate, double momentum, bool verbose, int barSize) {
     this->learningRate = learningRate;
     this->momentum = momentum;
+    this->verbose = verbose;
+    this->barSize = barSize;
     int numLayers = neurons.size();
     uint64_t timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed>>32)};
@@ -42,8 +44,10 @@ NeuralNetwork::NeuralNetwork(vector<int> neurons, double learningRate, double mo
     }
 }
 
-NeuralNetwork::NeuralNetwork(string fileName) {
+NeuralNetwork::NeuralNetwork(string fileName, bool verbose, int barSize) {
     loadData(fileName);
+    this->verbose = verbose;
+    this->barSize = barSize;
 }
 
 //min-max data normalization method
@@ -182,6 +186,9 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
     }
     //for every iteration
     for (unsigned int z = 0; z < iterations; z++) {
+        if (this->verbose) {
+            this->progressBar(z, iterations);
+        }
         //for every training data point
         for (unsigned int x = 0; x < input.size(); x++) {
             //gets the actual result of the current data point
@@ -248,38 +255,48 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
     }
 }
 
-void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int epochs, bool save, string fileName) {
+void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize, bool save, string fileName)  {
     double lr = learningRate;
     double m = momentum;
-    epochs += 1;
+    //numBatches += 1;
     //initialize input neuron weights
     if (!loadedData) {
         for (unsigned int i = 0; i < layers[0].size(); i++) {
             initializeWeights(input[0].size(), layers[0][i], layers[1].size());
         }
     }
+
     //for every iteration
     for (unsigned int z = 0; z < iterations; z++) {
+        if (this->verbose) {
+            this->progressBar(z, iterations);
+        }
         vector<vector<vector<double>>> batches;
         vector<vector<vector<double>>> batchResults;
+
+
         vector<int> indexes;
         indexes.reserve(input.size());
-        for (int i = 0; i < input.size(); ++i)
+        for (int i = 0; i < input.size(); ++i) {
             indexes.push_back(i);
+        }
         std::random_shuffle(indexes.begin(), indexes.end());
 
-        int batchSize = floor(input.size() / epochs);
+        int numBatches = floor(input.size() / batchSize);
+
         //for every batch
-        for (unsigned int i = 0; i < epochs - 1; i++) {
+        for (unsigned int i = 0; i < numBatches; i++) {
             vector<vector<double>> curBatch;
             vector<vector<double>> curResults;
             for (unsigned int x = i * batchSize; x < (i * batchSize) + batchSize; x++) {
-                curBatch.push_back(input[indexes[i]]);
-                curResults.push_back(allResults[indexes[i]]);
+                curBatch.push_back(input[indexes[x]]);
+                curResults.push_back(allResults[indexes[x]]);
             }
             batches.push_back(curBatch);
             batchResults.push_back(curResults);
         }
+
+
         //for every batch
         for (unsigned int batchCount = 0; batchCount < batches.size(); batchCount++) {
             //reset neuron deltas
@@ -325,13 +342,13 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
                 //for every neuron in the layer
                 for (unsigned int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
                     auto curN = layers[layerCount][neuronCount];
-                    curN->delta /= batchSize;
+                    curN->delta /= batches[batchCount].size();
                     //updates every weight and previous gradient for the current neuron
                     for (int w = 0; w < curN->weights.size(); w++) {
                         //gets the derivative of weight adjust with the delta of the current neuron and the inputs
                         double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
-                        curN->weights[w] -= result + curN->prevGradients[w] * m;
-                        curN->prevGradients[w] = result + curN->prevGradients[w] * m;
+                        curN->weights[w] -= (result + curN->prevGradients[w] * m);
+                        curN->prevGradients[w] = (result + curN->prevGradients[w] * m);
                     }
                     //updates bias and previous bias for the current neuron
                     double bResult = curN->delta * lr;
@@ -569,8 +586,6 @@ void NeuralNetwork::initializeWeights(int numWeights, Neuron* newN, double numOu
     newN->delta = 0;
 }
 
-
-
 //gradient descent method for final layer
 double NeuralNetwork::finalGradient(Neuron* curN, double expected) {
     return sigmoidDeriv(curN->output) * (sigmoid(curN->output) - expected);
@@ -649,4 +664,17 @@ bool NeuralNetwork::saveData(string fileName) {
     return false;
 }
 
-
+//displays a progress bar
+void NeuralNetwork::progressBar(double curVal, double goal) {
+    int barWidth = this->barSize;
+    double progress = double(curVal + 1) / goal;
+    cout << "[";
+    int pos = barWidth * progress;
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) cout << "=";
+        else if (i == pos) cout << ">";
+        else cout << " ";
+    }
+    cout << "] " << int(progress * 100.0) << " %\n\r";
+    cout.flush();
+}
