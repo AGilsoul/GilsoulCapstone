@@ -28,7 +28,6 @@ NeuralNetwork::NeuralNetwork(vector<int> neurons, double learningRate, double mo
     uint64_t timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed>>32)};
     rng.seed(ss);
-    //rng.seed(5);
 
     //initializes neurons and weights for every layer except input layer
     for (unsigned int i = 0; i < numLayers; i++) {
@@ -175,7 +174,7 @@ void NeuralNetwork::loadData(string fileName) {
 }
 
 //back propagation method, repeats for every iteration
-void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, bool save, string fileName) {
+void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, double dORate, bool save, string fileName) {
     double lr = learningRate;
     double m = momentum;
     //initialize input neuron weights
@@ -194,7 +193,7 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
             //gets the actual result of the current data point
             auto desiredResult = allResults[x];
             //gets predicted result from forward propagation
-            vector<double> finalResult = forwardProp(input[x]);
+            vector<double> finalResult = forwardProp(input[x], dORate);
             //sets up the nextDelta variables for the hidden layers
             vector<double> nextDeltas;
             //output layer back propagation
@@ -255,7 +254,7 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
     }
 }
 
-void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize, bool save, string fileName)  {
+void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize, double dORate, bool save, string fileName)  {
     double lr = learningRate;
     double m = momentum;
     //numBatches += 1;
@@ -310,7 +309,7 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
                 //gets the actual result of the current data point
                 auto desiredResult = batchResults[batchCount][x];
                 //gets predicted result from forward propagation
-                vector<double> finalResult = forwardProp(batches[batchCount][x]);
+                vector<double> finalResult = forwardProp(batches[batchCount][x], dORate);
                 //sets up the nextDelta variables for the hidden layers
                 vector<double> nextDeltas;
                 //output layer back propagation
@@ -362,7 +361,7 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
 
 
 //forward propagation method
-vector<double> NeuralNetwork::forwardProp(vector<double> input) {
+vector<double> NeuralNetwork::forwardProp(vector<double> input, double chanceDropout) {
     auto data = input;
     //for every hidden layer
     for (int layerIndex = 0; layerIndex < layers.size() - 1; layerIndex++) {
@@ -372,6 +371,10 @@ vector<double> NeuralNetwork::forwardProp(vector<double> input) {
             auto tempNPointer = layers[layerIndex][neuronIndex];
             //calculates neuron output
             double neuronResult = tempNPointer->calculate(data);
+            double val = ((double) rand() / (RAND_MAX));
+            if (val < 1 - chanceDropout) {
+                neuronResult = 0;
+            }
             tempNPointer->prevInputs = data;
             tempNPointer->output = neuronResult;
             //adds ReLu activation of neuron calculation to layer results vector
@@ -454,7 +457,7 @@ double NeuralNetwork::test(vector<vector<double>>& testData, vector<vector<doubl
 vector<double> NeuralNetwork::predict(vector<double> unknownP) {
     vector<vector<double>> reformatUnknown = {unknownP};
     normalize(reformatUnknown);
-    auto forwardResult = forwardProp(reformatUnknown[0]);
+    auto forwardResult = forwardProp(reformatUnknown[0], 1.0);
     if (layers[layers.size() - 1].size() == 1) {
         return forwardResult;
     }
@@ -514,7 +517,7 @@ void NeuralNetwork::resetWeights(int dataCount) {
 
 //Private Methods
 vector<double> NeuralNetwork::predictTest(vector<double> unknownP) {
-    auto forwardResult = forwardProp(unknownP);
+    auto forwardResult = forwardProp(unknownP, 1.0);
     if (layers[layers.size() - 1].size() == 1) {
         return forwardResult;
     }

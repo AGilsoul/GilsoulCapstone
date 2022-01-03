@@ -32,10 +32,10 @@ int main() {
     //test_cancer_config();
 
     //configuration that trains a neural network using mini-batch gd instead of stochastic gd
-    cancer_minibatch_config();
+    //cancer_minibatch_config();
 
     //configuration that trains and tests a neural network on breast tumors
-    //cancer_config();
+    cancer_config();
 
     //configuration that trains and tests a neural network on handwritten digits
     //WARNING: TAKES A VERY LONG TIME, JUST LOAD THE PRE-TRAINED NETWORK
@@ -137,7 +137,7 @@ void test_mnist_config() {
     cout << endl << "Neural Network Prediction of Handwritten Digits" << endl;
     cout << "********************************************************" << endl << endl;
     cout << "Loading neural network from " << fileName << "..." << endl;
-    NeuralNetwork net(fileName);
+    NeuralNetwork net(fileName, true);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Network construction successful!" << endl << endl;
 
@@ -192,7 +192,7 @@ void test_mnist_config() {
     cout << endl << "Training (This Could Take a Few Minutes)..." << endl;
     net.setLR(0.01);
     net.setMomentum(0.9);
-    net.trainMiniBatch(trainData, trainExpected, 40, 4);
+    net.trainMiniBatch(trainData, trainExpected, 40, 32);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Training Complete!" << endl << endl;
     SetConsoleTextAttribute(hConsole, 15);
@@ -275,10 +275,11 @@ void mnist_config() {
 void cancer_config() {
     double learningRate = 0.01;
     double momentum = 0.9;
+    double dORate = 0.5;
     //number of layers excluding input layer
     double splitRatio = 0.6;
     //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {60, 2};
+    vector<int> neuronCounts = {30, 2};
     //best with 200
     int iterations = 50;
     string fileName = "Breast_Cancer.csv";
@@ -288,7 +289,7 @@ void cancer_config() {
     cout << endl << "Neural Network Prediction of Malignancy in Breast Tumors" << endl;
     cout << "********************************************************" << endl << endl;
     cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
-    NeuralNetwork net(neuronCounts, learningRate, momentum);
+    NeuralNetwork net(neuronCounts, learningRate, momentum, false);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Network construction successful!" << endl << endl;
 
@@ -328,10 +329,12 @@ void cancer_config() {
     cout << "Data split!" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
-    net.train(trainData, trainExpected, iterations, false, "nn_cancer_config.csv");
+    cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s) using dropout rate of " << dORate << "..." << endl;
+    net.train(trainData, trainExpected, iterations, dORate, false, "nn_cancer_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
-    cout << "Model training complete!" << endl << endl;
+    cout << "Model training complete!" << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Validation Accuracy: " << net.test(trainData, trainExpected) << "%" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Testing with " << testData.size() << " data points..." << endl;
@@ -346,6 +349,7 @@ void cancer_config() {
 void cancer_minibatch_config() {
     double learningRate = 0.01;
     double momentum = 0.9;
+    double dORate = 0.8;
     //number of layers excluding input layer
     double splitRatio = 0.6;
     //neuron counts for hidden and output layers
@@ -401,7 +405,7 @@ void cancer_minibatch_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
-    net.trainMiniBatch(trainData, trainExpected, iterations, batchSize);
+    net.trainMiniBatch(trainData, trainExpected, iterations, batchSize, dORate);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
     SetConsoleTextAttribute(hConsole, 15);
