@@ -174,6 +174,93 @@ void NeuralNetwork::loadData(string fileName) {
 }
 
 //back propagation method, repeats for every iteration
+void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int iterations) {
+    double lr = learningRate;
+    double m = momentum;
+    double prevAccuracy = 0.0;
+    int iterationsDecreased = 0;
+    //initialize input neuron weights
+    if (!loadedData) {
+        for (unsigned int i = 0; i < layers[0].size(); i++) {
+            initializeWeights(trainInput[0].size(), layers[0][i], layers[1].size());
+        }
+    }
+    int actualIters = 0;
+    //for every iteration
+    for (unsigned int z = 0; z < iterations; z++) {
+        actualIters++;
+        if (this->verbose) {
+            this->progressBar(z, iterations);
+        }
+        //for every training data point
+        for (unsigned int x = 0; x < trainInput.size(); x++) {
+            //gets the actual result of the current data point
+            auto desiredResult = trainResults[x];
+            //gets predicted result from forward propagation
+            vector<double> finalResult = forwardProp(trainInput[x], this->dropOutRate);
+            //sets up the nextDelta variables for the hidden layers
+            vector<double> nextDeltas;
+            //output layer back propagation
+            for (unsigned int neuronCount = 0; neuronCount < layers[layers.size() - 1].size();neuronCount++) {
+                //current neuron
+                auto curN = layers[layers.size()- 1][neuronCount];
+                //gets the derivative of the neuron with respect to the expected output
+                curN->delta = finalGradient(curN, desiredResult[neuronCount]);
+                //adds the delta to the nextDeltas vector
+                nextDeltas.push_back(curN->delta);
+            }
+            //hidden layer backprop for every hidden layer
+            for (int layerCount = layers.size() - 2; layerCount >= 0; layerCount--) {
+                //tempDeltas vector, will be the nextDeltas vector for the previous layer
+                vector<double> tempDeltas;
+                //for every neuron in the hidden layer
+                for (unsigned int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
+                    //current neuron
+                    auto curN = layers[layerCount][neuronCount];
+                    //gets the derivative of the neuron with respect to the next layer neurons
+                    curN->delta = hiddenGradient(curN, neuronCount, layers[layerCount + 1], nextDeltas);
+                    tempDeltas.push_back(curN->delta);
+                }
+                nextDeltas = tempDeltas;
+            }
+
+            //updating weights in every layer
+            for (int layerCount = layers.size() - 1; layerCount >= 0; layerCount--) {
+                //for every neuron in the layer
+                for (unsigned int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
+                    auto curN = layers[layerCount][neuronCount];
+                    //updates every weight and previous gradient for the current neuron
+                    for (int w = 0; w < curN->weights.size(); w++) {
+                        //gets the derivative of weight adjust with the delta of the current neuron and the inputs
+                        double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
+                        curN->weights[w] -= result + curN->prevGradients[w] * m;
+                        curN->prevGradients[w] = result + curN->prevGradients[w] * m;
+                    }
+                    //updates bias and previous bias for the current neuron
+                    double bResult = curN->delta * lr;
+                    curN->bias -= bResult + curN->prevBias * m;
+                    curN->prevBias = bResult + curN->prevBias * m;
+                }
+            }
+        }
+        double valAccuracy = test(valInput, valResults);
+        double trainAccuracy = test(trainInput, trainResults);
+        if (valAccuracy < prevAccuracy) {
+            iterationsDecreased++;
+        }
+        else {
+            iterationsDecreased = 0;
+            prevAccuracy = valAccuracy;
+        }
+        if (iterationsDecreased == this->earlyStopping) {
+            break;
+        }
+    }
+    cout << "Trained for " << actualIters << " iterations" << endl;
+    loadedData = true;
+}
+
+
 void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations) {
     double lr = learningRate;
     double m = momentum;

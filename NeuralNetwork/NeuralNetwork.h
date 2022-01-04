@@ -67,6 +67,7 @@ public:
      */
     void normalize(vector<vector<double>>& input, vector<double> minMaxRange = {});
     void loadData(string fileName);
+    void train(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int maxIterations);
     void train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations);
     void trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize);
     vector<double> forwardProp(vector<double> input, double chanceDropout);
@@ -84,8 +85,8 @@ public:
     void setDropOut(double rate) {
         this->dropOutRate = rate;
     }
-    void setEarlyStopping(bool stoppage) {
-        this->earlyStopping = stoppage;
+    void setEarlyStopping(int numStop) {
+        this->earlyStopping = numStop;
     }
     bool saveModel(string fileName) {
         cout << "Saving data..." << endl;
@@ -124,7 +125,7 @@ private:
     double learningRate;
     double momentum;
     double dropOutRate = 1.0;
-    bool earlyStopping = false;
+    int earlyStopping = -1;
     std::mt19937_64 rng;
 };
 
