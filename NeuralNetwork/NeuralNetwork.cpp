@@ -50,7 +50,7 @@ NeuralNetwork::NeuralNetwork(string fileName, bool verbose, int barSize) {
 }
 
 //min-max data normalization method
-void NeuralNetwork::normalize(vector<vector<double>>& input, vector<double> minMaxRange, bool save, string fileName) {
+void NeuralNetwork::normalize(vector<vector<double>>& input, vector<double> minMaxRange) {
     if (!conversions) {
         if (minMaxRange.size() > 0) {
             for (unsigned int p = 0; p < input[0].size(); p++) {
@@ -174,7 +174,7 @@ void NeuralNetwork::loadData(string fileName) {
 }
 
 //back propagation method, repeats for every iteration
-void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, double dORate, bool save, string fileName) {
+void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations) {
     double lr = learningRate;
     double m = momentum;
     //initialize input neuron weights
@@ -193,7 +193,7 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
             //gets the actual result of the current data point
             auto desiredResult = allResults[x];
             //gets predicted result from forward propagation
-            vector<double> finalResult = forwardProp(input[x], dORate);
+            vector<double> finalResult = forwardProp(input[x], this->dropOutRate);
             //sets up the nextDelta variables for the hidden layers
             vector<double> nextDeltas;
             //output layer back propagation
@@ -241,20 +241,9 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
         }
     }
     loadedData = true;
-    //save weight data
-    if (save) {
-        cout << "Saving data..." << endl;
-        bool saveSuccess = saveData(fileName);
-        if (saveSuccess) {
-            cout << "Data saved successfully as " << fileName << endl;
-        }
-        else {
-            cout << "Failed to save data" << endl;
-        }
-    }
 }
 
-void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize, double dORate, bool save, string fileName)  {
+void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize)  {
     double lr = learningRate;
     double m = momentum;
     //numBatches += 1;
@@ -309,7 +298,7 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
                 //gets the actual result of the current data point
                 auto desiredResult = batchResults[batchCount][x];
                 //gets predicted result from forward propagation
-                vector<double> finalResult = forwardProp(batches[batchCount][x], dORate);
+                vector<double> finalResult = forwardProp(batches[batchCount][x], this->dropOutRate);
                 //sets up the nextDelta variables for the hidden layers
                 vector<double> nextDeltas;
                 //output layer back propagation

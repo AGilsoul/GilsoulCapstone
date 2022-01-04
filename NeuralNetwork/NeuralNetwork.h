@@ -65,10 +65,10 @@ public:
      * @param save set to true when the user wants to save a configuration file for the normalization ranges
      * @param fileName file name of the normalization range file
      */
-    void normalize(vector<vector<double>>& input, vector<double> minMaxRange = {}, bool save = false, string fileName = "");
+    void normalize(vector<vector<double>>& input, vector<double> minMaxRange = {});
     void loadData(string fileName);
-    void train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, double dORate = 1.0, bool save = false, string fileName = "");
-    void trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize, double dORate = 1.0, bool save = false, string fileName = "");
+    void train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations);
+    void trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize);
     vector<double> forwardProp(vector<double> input, double chanceDropout);
     static void printVector(vector<double> input);
     vector<vector<double>> vectorSplit(vector<vector<double>> vec, int start, int fin);
@@ -80,6 +80,24 @@ public:
     }
     void setLR(double lr) {
         this->learningRate = lr;
+    }
+    void setDropOut(double rate) {
+        this->dropOutRate = rate;
+    }
+    void setEarlyStopping(bool stoppage) {
+        this->earlyStopping = stoppage;
+    }
+    bool saveModel(string fileName) {
+        cout << "Saving data..." << endl;
+        bool saveSuccess = saveData(fileName);
+        if (saveSuccess) {
+            cout << "Data saved successfully as " << fileName << endl;
+            return true;
+        }
+        else {
+            cout << "Failed to save data" << endl;
+            return false;
+        }
     }
 
 private:
@@ -105,6 +123,8 @@ private:
     int barSize = 70;
     double learningRate;
     double momentum;
+    double dropOutRate = 1.0;
+    bool earlyStopping = false;
     std::mt19937_64 rng;
 };
 
