@@ -111,7 +111,7 @@ private:
     void initializeWeights(int numWeights, Neuron* newN, double numOut);
     double finalGradient(Neuron* curN, double expected);
     double hiddenGradient(Neuron* curN, int nIndex, vector<Neuron*> nextLayer, vector<double> nextDeltas);
-    double weightDerivative(double neuronError, double prevNeuron);
+    double weightDerivative(double neuronDelta, double input);
     vector<double> sortVector(vector<double> vec);
     bool saveData(string fileName);
     void progressBar(double curVal, double goal);

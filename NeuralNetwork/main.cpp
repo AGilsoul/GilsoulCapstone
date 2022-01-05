@@ -284,7 +284,7 @@ void cancer_config() {
     vector<int> neuronCounts = {30, 2};
     //best with 200
     int iterations = 10000;
-    int earlyStopping = 10;
+    int earlyStopping = 15;
     string fileName = "Breast_Cancer.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);

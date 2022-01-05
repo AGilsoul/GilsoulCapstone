@@ -298,7 +298,7 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
                 vector<double> tempDeltas;
                 //for every neuron in the hidden layer
                 for (unsigned int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
-                    //current enuron
+                    //current neuron
                     auto curN = layers[layerCount][neuronCount];
                     //gets the derivative of the neuron with respect to the next layer neurons
                     curN->delta = hiddenGradient(curN, neuronCount, layers[layerCount + 1], nextDeltas);
@@ -434,7 +434,6 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
         }
     }
 }
-
 
 //forward propagation method
 vector<double> NeuralNetwork::forwardProp(vector<double> input, double chanceDropout) {
@@ -667,7 +666,7 @@ void NeuralNetwork::initializeWeights(int numWeights, Neuron* newN, double numOu
 
 //gradient descent method for final layer
 double NeuralNetwork::finalGradient(Neuron* curN, double expected) {
-    return sigmoidDeriv(curN->output) * (sigmoid(curN->output) - expected);
+    return 2 * sigmoidDeriv(curN->output) * (sigmoid(curN->output) - expected);
 }
 
 //gradient descent method for hidden layers
@@ -681,8 +680,8 @@ double NeuralNetwork::hiddenGradient(Neuron* curN, int nIndex, vector<Neuron*> n
 }
 
 //Gets the derivative to be applied to weights
-double NeuralNetwork::weightDerivative(double neuronError, double prevNeuron) {
-    return neuronError * prevNeuron;
+double NeuralNetwork::weightDerivative(double neuronDelta, double input) {
+    return neuronDelta * input;
 }
 
 //sorts a vector of doubles
