@@ -283,8 +283,9 @@ void cancer_config() {
     //neuron counts for hidden and output layers
     vector<int> neuronCounts = {30, 2};
     //best with 200
-    int iterations = 10000;
-    int earlyStopping = 15;
+    int maxIterations = 10000;
+    int minIterations = 30;
+    int earlyStopping = 20;
     string fileName = "Breast_Cancer.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -340,8 +341,8 @@ void cancer_config() {
     cout << "Data split!" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Training with " << trainData.size() << " data points over <= " << iterations << " iteration(s) |  early stopping: " << earlyStopping << " | dropout rate: " << dORate << endl;
-    net.train(trainData, trainExpected, valData, valExpected, iterations);
+    cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s) |  early stopping: " << earlyStopping << " | dropout rate: " << dORate << endl;
+    net.train(trainData, trainExpected, valData, valExpected, minIterations, maxIterations);
     //net.saveModel("nn_cancer_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl;

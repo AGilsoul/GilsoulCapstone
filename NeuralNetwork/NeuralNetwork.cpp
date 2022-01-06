@@ -174,7 +174,7 @@ void NeuralNetwork::loadData(string fileName) {
 }
 
 //back propagation method, repeats for every iteration
-void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int iterations) {
+void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations) {
     double lr = learningRate;
     double m = momentum;
     double prevAccuracy = 0.0;
@@ -187,10 +187,10 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
     }
     int actualIters = 0;
     //for every iteration
-    for (unsigned int z = 0; z < iterations; z++) {
+    for (unsigned int z = 0; z < maxIterations; z++) {
         actualIters++;
         if (this->verbose) {
-            this->progressBar(z, iterations);
+            this->progressBar(z, maxIterations);
         }
         //for every training data point
         for (unsigned int x = 0; x < trainInput.size(); x++) {
@@ -252,7 +252,7 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
             iterationsDecreased = 0;
             prevAccuracy = valAccuracy;
         }
-        if (iterationsDecreased == this->earlyStopping) {
+        if (iterationsDecreased == this->earlyStopping and z >= minIterations) {
             break;
         }
     }

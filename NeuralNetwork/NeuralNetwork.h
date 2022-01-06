@@ -67,7 +67,7 @@ public:
      */
     void normalize(vector<vector<double>>& input, vector<double> minMaxRange = {});
     void loadData(string fileName);
-    void train(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int maxIterations);
+    void train(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations);
     void train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations);
     void trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize);
     vector<double> forwardProp(vector<double> input, double chanceDropout);
