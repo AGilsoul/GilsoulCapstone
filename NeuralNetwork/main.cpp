@@ -35,7 +35,7 @@ int main() {
     //cancer_minibatch_config();
 
     //configuration that trains and tests a neural network on breast tumors
-    cancer_config();
+    //cancer_config();
 
     //configuration that trains and tests a neural network on handwritten digits
     //WARNING: TAKES A VERY LONG TIME, JUST LOAD THE PRE-TRAINED NETWORK
@@ -45,7 +45,7 @@ int main() {
     //test_mnist_config();
 
     //regression configuration that trains a neural network on residential structure data and predicts cooling load
-    //energy_config();
+    energy_config();
 
     return 0;
 }
@@ -205,12 +205,14 @@ void test_mnist_config() {
 void mnist_config() {
     double learningRate = 0.01;
     double momentum = 0.9;
-    //number of layers excluding input layer
-    double splitRatio = 0.75;
+    double dropOutRate = 0.5;
+    vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {100, 10};
+    vector<int> neuronCounts = {200, 10};
     //best with 200
-    int iterations = 200;
+    int minIterations = 20;
+    int maxIterations = 1000;
+    int earlyStopping = 20;
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -219,6 +221,8 @@ void mnist_config() {
     cout << "********************************************************" << endl << endl;
     cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
     NeuralNetwork net(neuronCounts, learningRate, momentum);
+    net.setEarlyStopping(earlyStopping);
+    net.setDropOut(dropOutRate);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Network construction successful!" << endl << endl;
 
@@ -249,20 +253,26 @@ void mnist_config() {
     expected = newExpect;
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Splitting data with a training:test ratio of "<< splitRatio * 100 << ":" << (1 - splitRatio) * 100 << "..." << endl;
-    auto trainData = net.vectorSplit(data, 0, ceil(data.size() * splitRatio));
-    auto testData = net.vectorSplit(data, ceil(data.size() * splitRatio), data.size() - 1);
-    auto trainExpected = net.vectorSplit(expected, 0, ceil(expected.size() * splitRatio));
-    auto testExpected = net.vectorSplit(expected, ceil(expected.size() * splitRatio), expected.size() - 1);
+    cout << "Splitting data with a training:val:test ratio of "<< splitRatios[0] * 100 << ":" << splitRatios[1] * 100 << ":" << splitRatios[2] * 100 << "..." << endl;
+    auto allData = net.trainValTestSplit(data, splitRatios);
+    auto allLabels = net.trainValTestSplit(expected, splitRatios);
+    auto trainData = allData[0];
+    auto trainExpected = allLabels[0];
+    auto valData = allData[1];
+    auto valExpected = allLabels[1];
+    auto testData = allData[2];
+    auto testExpected = allLabels[2];
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data split!" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
-    net.train(trainData, trainExpected, iterations);
-    net.saveModel("mnist_train_config.csv");
+    cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s)..." << endl;
+    net.train(trainData, trainExpected, valData, valExpected, minIterations, maxIterations);
+    //net.saveModel("mnist_train_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Validation Accuracy: " << net.test(valData, valExpected) << "%" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Testing with " << testData.size() << " data points..." << endl;
@@ -279,7 +289,7 @@ void cancer_config() {
     double momentum = 0.9;
     double dORate = 0.5;
     //number of layers excluding input layer
-    double splitRatio = 0.8;
+    vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
     vector<int> neuronCounts = {30, 2};
     //best with 200
@@ -326,16 +336,15 @@ void cancer_config() {
     expected = newExpect;
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Splitting data with a training:test ratio of "<< splitRatio * 100 << ":" << (1 - splitRatio) * 100 << "..." << endl;
-    auto trainTempData = net.vectorSplit(data, 0, ceil(data.size() * splitRatio));
-    auto testData = net.vectorSplit(data, ceil(data.size() * splitRatio), data.size() - 1);
-    auto trainTempExpected = net.vectorSplit(expected, 0, ceil(expected.size() * splitRatio));
-    auto testExpected = net.vectorSplit(expected, ceil(expected.size() * splitRatio), expected.size() - 1);
-    auto trainData = net.vectorSplit(trainTempData, 0, ceil(trainTempData.size() * 0.75));
-    auto valData = net.vectorSplit(trainTempData, ceil(trainTempData.size() * 0.75), trainTempData.size() - 1);
-    auto trainExpected = net.vectorSplit(trainTempExpected, 0, ceil(trainTempExpected.size() * 0.75));
-    auto valExpected = net.vectorSplit(trainTempExpected, ceil(trainTempExpected.size() * 0.75), trainTempExpected.size() - 1);
-
+    cout << "Splitting data with a training:validation:test ratio of "<< splitRatios[0] * 100 << ":" << splitRatios[1] * 100 << ":" << splitRatios[2] * 100 << "..." << endl;
+    auto allData = net.trainValTestSplit(newData, {.6, .2, .2});
+    auto allLabels = net.trainValTestSplit(newExpect, {.6, .2, .2});
+    auto trainData = allData[0];
+    auto trainExpected = allLabels[0];
+    auto valData = allData[1];
+    auto valExpected = allLabels[1];
+    auto testData = allData[2];
+    auto testExpected = allLabels[2];
 
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data split!" << endl << endl;
@@ -444,13 +453,14 @@ void cancer_minibatch_config() {
 
 void energy_config() {
     double learningRate = 0.01;
-    double momentum = 0.9;
+    double momentum = 0.0;
+    double dropOutRate = 0.5;
     //number of layers excluding input layer
     double splitRatio = 0.75;
     //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {10, 1};
+    vector<int> neuronCounts = {20, 1};
     //best with 200
-    int iterations = 100;
+    int iterations = 5;
     string fileName = "energyefficiency.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -459,6 +469,7 @@ void energy_config() {
     cout << "********************************************************" << endl << endl;
     cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
     NeuralNetwork net(neuronCounts, learningRate, momentum);
+    net.setDropOut(dropOutRate);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Network construction successful!" << endl << endl;
 
@@ -499,7 +510,7 @@ void energy_config() {
     cout << "Data split!" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s)..." << endl;
+    cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s) | dropout rate: " << dropOutRate << endl;
     net.train(trainData, trainExpected, iterations);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;

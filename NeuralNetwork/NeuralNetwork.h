@@ -73,6 +73,7 @@ public:
     vector<double> forwardProp(vector<double> input, double chanceDropout);
     static void printVector(vector<double> input);
     vector<vector<double>> vectorSplit(vector<vector<double>> vec, int start, int fin);
+    vector<vector<vector<double>>> trainValTestSplit(vector<vector<double>> vec, vector<double> splitRatios);
     double test(vector<vector<double>>& testData, vector<vector<double>>& testLabel);
     vector<double> predict(vector<double> unknownP);
     void resetWeights(int inputCount);
@@ -109,7 +110,8 @@ private:
     double relu(double input);
     double reluDeriv(double input);
     void initializeWeights(int numWeights, Neuron* newN, double numOut);
-    double finalGradient(Neuron* curN, double expected);
+    double finalSigmoidGradient(Neuron* curN, double expected);
+    double finalLinearGradient(Neuron* curN, double expected);
     double hiddenGradient(Neuron* curN, int nIndex, vector<Neuron*> nextLayer, vector<double> nextDeltas);
     double weightDerivative(double neuronDelta, double input);
     vector<double> sortVector(vector<double> vec);

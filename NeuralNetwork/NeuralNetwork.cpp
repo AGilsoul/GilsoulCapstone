@@ -205,7 +205,12 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
                 //current neuron
                 auto curN = layers[layers.size()- 1][neuronCount];
                 //gets the derivative of the neuron with respect to the expected output
-                curN->delta = finalGradient(curN, desiredResult[neuronCount]);
+                if (layers[layers.size() - 1].size() != 1) {
+                    curN->delta = finalSigmoidGradient(curN, desiredResult[neuronCount]);
+                }
+                else {
+                    curN->delta = finalLinearGradient(curN, desiredResult[neuronCount]);
+                }
                 //adds the delta to the nextDeltas vector
                 nextDeltas.push_back(curN->delta);
             }
@@ -260,7 +265,6 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
     loadedData = true;
 }
 
-
 void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations) {
     double lr = learningRate;
     double m = momentum;
@@ -288,7 +292,12 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
                 //current neuron
                 auto curN = layers[layers.size()- 1][neuronCount];
                 //gets the derivative of the neuron with respect to the expected output
-                curN->delta = finalGradient(curN, desiredResult[neuronCount]);
+                if (layers[layers.size() - 1].size() != 1) {
+                    curN->delta = finalSigmoidGradient(curN, desiredResult[neuronCount]);
+                }
+                else {
+                    curN->delta = finalLinearGradient(curN, desiredResult[neuronCount]);
+                }
                 //adds the delta to the nextDeltas vector
                 nextDeltas.push_back(curN->delta);
             }
@@ -393,7 +402,12 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
                     //current neuron
                     auto curN = layers[layers.size() - 1][neuronCount];
                     //gets the derivative of the neuron with respect to the expected output
-                    curN->delta += finalGradient(curN, desiredResult[neuronCount]);
+                    if (layers[layers.size() - 1].size() != 1) {
+                        curN->delta = finalSigmoidGradient(curN, desiredResult[neuronCount]);
+                    }
+                    else {
+                        curN->delta = finalLinearGradient(curN, desiredResult[neuronCount]);
+                    }
                     //adds the delta to the nextDeltas vector
                     nextDeltas.push_back(curN->delta);
                 }
@@ -496,6 +510,13 @@ vector<vector<double>> NeuralNetwork::vectorSplit(vector<vector<double>> vec, in
         newVec.push_back(vec[i]);
     }
     return newVec;
+}
+
+vector<vector<vector<double>>> NeuralNetwork::trainValTestSplit(vector<vector<double>> vec, vector<double> splitRatios) {
+    auto trainVec = vectorSplit(vec, 0, ceil(vec.size() * splitRatios[0]));
+    auto valVec = vectorSplit(vec, ceil(vec.size() * splitRatios[0]), ceil(vec.size() * (splitRatios[0] + splitRatios[1])));
+    auto testVec = vectorSplit(vec, ceil(vec.size() * (splitRatios[0] + splitRatios[1])), ceil(vec.size() - 1));
+    return {trainVec, valVec, testVec};
 }
 
 //testing method, compares predicted results after training with actual results
@@ -665,8 +686,12 @@ void NeuralNetwork::initializeWeights(int numWeights, Neuron* newN, double numOu
 }
 
 //gradient descent method for final layer
-double NeuralNetwork::finalGradient(Neuron* curN, double expected) {
+double NeuralNetwork::finalSigmoidGradient(Neuron* curN, double expected) {
     return 2 * sigmoidDeriv(curN->output) * (sigmoid(curN->output) - expected);
+}
+
+double NeuralNetwork::finalLinearGradient(Neuron *curN, double expected) {
+    return 2 * (curN->output - expected);
 }
 
 //gradient descent method for hidden layers
