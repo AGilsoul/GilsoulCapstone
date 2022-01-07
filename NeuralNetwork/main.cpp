@@ -620,9 +620,9 @@ void synchronous_machine_config() {
     vector<double> example = {6,0.79,0.21,0.538,1.718};
     cout << "Predicting Excitation Current of Synchronous Machine Sample 547:" << endl;
     cout << "Load Current: " << example[0] << endl;
-    cout << "Power Factor: " << example[1] << " m^2" << endl;
-    cout << "Power Factor Error: " << example[2] << " m^2" << endl;
-    cout << "Changing Excitation Current of Synchronous Machine: " << example[3] << " m^2" << endl;
+    cout << "Power Factor: " << example[1] << endl;
+    cout << "Power Factor Error: " << example[2] << endl;
+    cout << "Changing Excitation Current of Synchronous Machine: " << example[3] << endl;
     cout << endl << "Predicted Excitation Current: " << net.predict(example)[0] << " A" << endl;
 
 }
