@@ -568,7 +568,7 @@ void synchronous_machine_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Reading data from " << fileName << "..." << endl;
-    energyFile(data, expected, fileName);
+    synchronousMachineFile(data, expected, fileName);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data collected!" << endl << endl;
     SetConsoleTextAttribute(hConsole, 15);
@@ -617,7 +617,7 @@ void synchronous_machine_config() {
     cout << "Mean Squared Error: " << testResult << endl;
     cout << "Mean Error: " << sqrt(testResult) << endl << endl;
 
-    vector<double> example = {6,0.79,0.21,0.538,1.718};
+    vector<double> example = {6,0.79,0.21,0.538};
     cout << "Predicting Excitation Current of Synchronous Machine Sample 547:" << endl;
     cout << "Load Current: " << example[0] << endl;
     cout << "Power Factor: " << example[1] << endl;
