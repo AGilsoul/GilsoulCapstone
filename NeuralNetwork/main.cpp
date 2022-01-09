@@ -812,7 +812,7 @@ void pulsar_config() {
     cout << "Mean of Integrated Profile: " << example[0] << endl;
     cout << "Standard Deviation of Integrated Profile: " << example[1] << endl;
     cout << "Excess Kurtosis of Integrated Profile: " << example[2] << endl;
-    cout << "Skewness of Integrated Profile" << example[3] << endl;
+    cout << "Skewness of Integrated Profile: " << example[3] << endl;
     cout << "Mean of DM-SNR Curve: " << example[4] << endl;
     cout << "Standard Deviation of DM-SNR Curve: " << example[5] << endl;
     cout << "Excess Kurtosis of DM-SNR Curve: " << example[6] << endl;
