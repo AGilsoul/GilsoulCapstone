@@ -24,10 +24,14 @@ void cancer_minibatch_config();
 void mnist_config();
 void energy_config();
 void synchronous_machine_config();
+void gamma_ray_config();
+void pulsar_config();
 void readMnistFile(vector<vector<double>>& testData, vector<vector<double>>& expected);
 void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
 void energyFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
 void synchronousMachineFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
+void gammaFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
+void pulsarFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
 
 
 int main() {
@@ -51,7 +55,13 @@ int main() {
     //energy_config();
 
     //regression config for excitation current of synchronous machines
-    synchronous_machine_config();
+    //synchronous_machine_config();
+
+    //classification config that predicts a class of Cherenkov radiation producing event
+    //gamma_ray_config();
+
+    //regression config for determining diameter of asteroids based on various orbital traits
+    pulsar_config();
 
     return 0;
 }
@@ -558,7 +568,7 @@ void synchronous_machine_config() {
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hConsole, 15);
-    cout << endl << "Neural Network Prediction of Cooling Energy Load in Residential Buildings" << endl;
+    cout << endl << "Neural Network Prediction of Excitation Current in Synchronous Machines" << endl;
     cout << "********************************************************" << endl << endl;
     cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
     NeuralNetwork net(neuronCounts, learningRate, momentum);
@@ -624,6 +634,191 @@ void synchronous_machine_config() {
     cout << "Power Factor Error: " << example[2] << endl;
     cout << "Changing Excitation Current of Synchronous Machine: " << example[3] << endl;
     cout << endl << "Predicted Excitation Current: " << net.predict(example)[0] << " A" << endl;
+
+}
+
+void gamma_ray_config() {
+    double learningRate = 0.01;
+    double momentum = 0.9;
+    double dropOutRate = 0.75;
+    double earlyStopping = 50;
+    //number of layers excluding input layer
+    vector<double> splitRatios = {0.6,0.2,0.2};
+    //neuron counts for hidden and output layers
+    vector<int> neuronCounts = {10, 2};
+    //best with 200
+    int minIterations = 30;
+    int maxIterations = 1000;
+    string fileName = "magic04.csv";
+    vector<vector<double>> data, expected;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << endl << "Neural Network Classification of Cherenkov Radiation Events" << endl;
+    cout << "********************************************************" << endl << endl;
+    cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
+    NeuralNetwork net(neuronCounts, learningRate, momentum);
+    net.setDropOut(dropOutRate);
+    net.setEarlyStopping(earlyStopping);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Network construction successful!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Reading data from " << fileName << "..." << endl;
+    gammaFile(data, expected, fileName);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data collected!" << endl << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Normalizing data..." << endl;
+    net.normalize(data);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data normalized!" << endl << endl;
+
+    auto falsePositiveData = net.vectorSplit(data, 12332, data.size()-1);
+    auto falsePositiveLabels = net.vectorSplit(expected, 12332, expected.size()-1);
+
+    vector<int> indexes;
+    indexes.reserve(data.size());
+    for (int i = 0; i < data.size(); ++i)
+        indexes.push_back(i);
+
+    std::random_shuffle(indexes.begin(), indexes.end());
+    vector<vector<double>> newData;
+    vector<vector<double>> newExpect;
+    for (unsigned int i = 0; i < data.size(); i++) {
+        newData.push_back(data[indexes[i]]);
+        newExpect.push_back(expected[indexes[i]]);
+    }
+    data = newData;
+    expected = newExpect;
+
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Splitting data with a training:validation:test ratio of "<< splitRatios[0] * 100 << ":" << splitRatios[1] * 100 << ":" << splitRatios[2] * 100 << "..." << endl;
+    auto allData = net.trainValTestSplit(data, splitRatios);
+    auto allLabels = net.trainValTestSplit(expected, splitRatios);
+    auto trainData = allData[0];
+    auto valData = allData[1];
+    auto testData = allData[2];
+    auto trainLabels = allLabels[0];
+    auto valLabels = allLabels[1];
+    auto testLabels = allLabels[2];
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data split!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s) | early stopping: " << earlyStopping << " | dropout rate: " << dropOutRate << endl;
+    net.train(trainData, trainLabels, valData, valLabels, minIterations, maxIterations);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Model training complete!" << endl << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Validation Accuracy: " << net.test(valData, valLabels) << "%" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Testing with " << testData.size() << " data points..." << endl;
+    SetConsoleTextAttribute(hConsole, 10);
+    double testResult = net.test(testData, testLabels);
+    cout << "Testing complete!" << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Model Accuracy: " << testResult << "%" << endl << endl;
+
+    cout << "Testing Percent of False Positives (Background Identified as a Signal)..." << endl;
+    auto result = net.test(falsePositiveData, falsePositiveLabels);
+    cout << endl << "Percent of False Positives: " << 100 - result << "%" << endl;
+}
+
+void pulsar_config() {
+    double learningRate = 0.01;
+    double momentum = 0.9;
+    double dropOutRate = 0.5;
+    double earlyStopping = 20;
+    //number of layers excluding input layer
+    vector<double> splitRatios = {0.6,0.2,0.2};
+    //neuron counts for hidden and output layers
+    vector<int> neuronCounts = {10, 2};
+    //best with 200
+    int minIterations = 20;
+    int maxIterations = 10000;
+    string fileName = "pulsar_data.csv";
+    vector<vector<double>> data, expected;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << endl << "Neural Network Classification of Pulsar Candidates" << endl;
+    cout << "********************************************************" << endl << endl;
+    cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
+    NeuralNetwork net(neuronCounts, learningRate, momentum);
+    net.setDropOut(dropOutRate);
+    net.setEarlyStopping(earlyStopping);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Network construction successful!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Reading data from " << fileName << "..." << endl;
+    pulsarFile(data, expected, fileName);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data collected!" << endl << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Normalizing data..." << endl;
+    net.normalize(data);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data normalized!" << endl << endl;
+
+    vector<int> indexes;
+    indexes.reserve(data.size());
+    for (int i = 0; i < data.size(); ++i)
+        indexes.push_back(i);
+
+    std::random_shuffle(indexes.begin(), indexes.end());
+    vector<vector<double>> newData;
+    vector<vector<double>> newExpect;
+    for (unsigned int i = 0; i < data.size(); i++) {
+        newData.push_back(data[indexes[i]]);
+        newExpect.push_back(expected[indexes[i]]);
+    }
+    data = newData;
+    expected = newExpect;
+
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Splitting data with a training:val:test ratio of "<< splitRatios[0] * 100 << ":" << splitRatios[1] * 100 << ":" << splitRatios[2] * 100 << "..." << endl;
+    auto allData = net.trainValTestSplit(data, splitRatios);
+    auto allLabels = net.trainValTestSplit(expected, splitRatios);
+    auto trainData = allData[0];
+    auto trainLabels = allLabels[0];
+    auto valData = allData[1];
+    auto valLabels = allLabels[1];
+    auto testData = allData[2];
+    auto testLabels = allLabels[2];
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data split!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations <<" iteration(s) | early stopping: " << earlyStopping << " | dropout rate: " << dropOutRate << endl;
+    net.train(trainData, trainLabels, valData, valLabels, minIterations, maxIterations);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Model training complete!" << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Validation Accuracy: " << net.test(valData, valLabels) << "%" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Testing with " << testData.size() << " data points..." << endl;
+    SetConsoleTextAttribute(hConsole, 10);
+    double testResult = net.test(testData, testLabels);
+    cout << "Testing complete!" << endl;
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Model Accuracy: " << testResult << "%" << endl << endl;
+
+    vector<double> example = {124.859375,40.97135706,-0.084806487,0.297894554,4.940635452,28.80743913,6.466653343,43.31394596};
+    cout << "Predicting Class of Pulsar Candidate 11680..." << endl;
+    cout << "Mean of Integrated Profile: " << example[0] << endl;
+    cout << "Standard Deviation of Integrated Profile: " << example[1] << endl;
+    cout << "Excess Kurtosis of Integrated Profile: " << example[2] << endl;
+    cout << "Skewness of Integrated Profile" << example[3] << endl;
+    cout << "Mean of DM-SNR Curve: " << example[4] << endl;
+    cout << "Standard Deviation of DM-SNR Curve: " << example[5] << endl;
+    cout << "Excess Kurtosis of DM-SNR Curve: " << example[6] << endl;
+    cout << "Skewness of DM-SNR Curve: " << example[7] << endl;
+
+    cout << endl << "Predicted Class (1-Pulsar, 0-Not-Pulsar): " << net.predict(example)[0] << endl;
 
 }
 
@@ -771,6 +966,76 @@ void synchronousMachineFile(vector<vector<double>>& testData, vector<vector<doub
         }
         expected.push_back(result);
         testData.push_back(dData);
+    }
+    fin.close();
+}
+
+void gammaFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName) {
+    //strings to be used for reference and assignment of values when reading the file and assigning to the string list sList
+    string sList[11];
+    ifstream fin(fileName, ios::in);
+    vector<string> labels;
+    int listSize = sizeof(sList) / sizeof(sList[0]);
+    while (!fin.eof()) {
+        vector<double> dData;
+        vector<double> result;
+        for (int i = 0; i < listSize; i++) {
+            if (i != listSize - 1) {
+                getline(fin, sList[i], ',');
+            }
+            else {
+                getline(fin, sList[i], '\n');
+            }
+
+            if (i != 10) {
+                dData.push_back(stod(sList[i]));
+            }
+            else if (i == 10) {
+                if (sList[i] == "g") {
+                    result = {1, 0};
+                }
+                else {
+                    result = {0, 1};
+                }
+            }
+        }
+        expected.push_back(result);
+        testData.push_back(dData);
+    }
+    fin.close();
+}
+
+void pulsarFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName) {
+    //strings to be used for reference and assignment of values when reading the file and assigning to the string list sList
+    string sList[9];
+    ifstream fin(fileName, ios::in);
+    vector<string> labels;
+    int listSize = sizeof(sList) / sizeof(sList[0]);
+    while (!fin.eof()) {
+        vector<double> dData;
+        vector<double> result;
+        for (int i = 0; i < listSize; i++) {
+            if (i != listSize - 1) {
+                getline(fin, sList[i], ',');
+            }
+            else {
+                getline(fin, sList[i], '\n');
+            }
+
+            if (i != 8) {
+                dData.push_back(stod(sList[i]));
+            }
+            else if (i == 8) {
+                if (sList[i] == "1") {
+                    result = {1, 0};
+                }
+                else {
+                    result = {0, 1};
+                }
+            }
+        }
+        testData.push_back(dData);
+        expected.push_back(result);
     }
     fin.close();
 }
