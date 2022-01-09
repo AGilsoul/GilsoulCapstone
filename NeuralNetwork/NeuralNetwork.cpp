@@ -31,9 +31,9 @@ NeuralNetwork::NeuralNetwork(vector<int> neurons, double learningRate, double mo
 
     //initializes neurons and weights for every layer except input layer
     for (unsigned int i = 0; i < numLayers; i++) {
-        vector<Neuron*> tempLayer;
+        vector<shared_ptr<Neuron>> tempLayer;
         for (unsigned int n = 0; n < neurons[i]; n++) {
-            Neuron* tempNeuron = new Neuron;
+            auto tempNeuron = make_shared<Neuron>();
             if (i != 0) {
                 initializeWeights(neurons[i-1], tempNeuron, neurons[i]);
             }
@@ -127,11 +127,11 @@ void NeuralNetwork::loadData(string fileName) {
     std::getline(fin, nPL, '\n');
     neuronsPerLayer.push_back(stoi(nPL));
     //for every neuron, gets weight count and weights
-    vector<vector<Neuron*>> newLayers;
+    vector<vector<shared_ptr<Neuron>>> newLayers;
     for (int curLayer = 0; curLayer < neuronsPerLayer.size(); curLayer++) {
-        vector<Neuron*> tempLayer;
+        vector<shared_ptr<Neuron>> tempLayer;
         for (int curNeuron = 0; curNeuron < neuronsPerLayer[curLayer]; curNeuron++) {
-            Neuron* tempNeuron = new Neuron;
+            auto tempNeuron = make_shared<Neuron>();
             string numWeights;
             std::getline(fin, numWeights, '\n');
             vector<double> tempWeights;
@@ -665,7 +665,7 @@ double NeuralNetwork::reluDeriv(double input) {
 }
 
 //initializes neuron weights to a random value
-void NeuralNetwork::initializeWeights(int numWeights, Neuron* newN, double numOut) {
+void NeuralNetwork::initializeWeights(int numWeights, shared_ptr<Neuron> newN, double numOut) {
     //normalized xavier weight initialization
     std::uniform_real_distribution<double> unif(-1 * sqrt(6.0) / sqrt(numWeights + numOut), sqrt(6.0) / sqrt(numWeights + numOut));
     bool notZero;
@@ -686,16 +686,16 @@ void NeuralNetwork::initializeWeights(int numWeights, Neuron* newN, double numOu
 }
 
 //gradient descent method for final layer
-double NeuralNetwork::finalSigmoidGradient(Neuron* curN, double expected) {
+double NeuralNetwork::finalSigmoidGradient(shared_ptr<Neuron> curN, double expected) {
     return 2 * sigmoidDeriv(curN->output) * (sigmoid(curN->output) - expected);
 }
 
-double NeuralNetwork::finalLinearGradient(Neuron *curN, double expected) {
+double NeuralNetwork::finalLinearGradient(shared_ptr<Neuron> curN, double expected) {
     return 2 * (curN->output - expected);
 }
 
 //gradient descent method for hidden layers
-double NeuralNetwork::hiddenGradient(Neuron* curN, int nIndex, vector<Neuron*> nextLayer, vector<double> nextDeltas) {
+double NeuralNetwork::hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector<shared_ptr<Neuron>> nextLayer, vector<double> nextDeltas) {
     double total = 0;
     for (unsigned int i = 0; i < nextLayer.size(); i++) {
         auto newN = nextLayer[i];

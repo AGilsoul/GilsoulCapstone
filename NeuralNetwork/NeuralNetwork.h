@@ -21,6 +21,8 @@ using std::ofstream;
 using std::ifstream;
 using std::string;
 using std::ios;
+using std::shared_ptr;
+using std::make_shared;
 
 
 class NeuralNetwork {
@@ -109,16 +111,16 @@ private:
     double sigmoidDeriv(double input);
     double relu(double input);
     double reluDeriv(double input);
-    void initializeWeights(int numWeights, Neuron* newN, double numOut);
-    double finalSigmoidGradient(Neuron* curN, double expected);
-    double finalLinearGradient(Neuron* curN, double expected);
-    double hiddenGradient(Neuron* curN, int nIndex, vector<Neuron*> nextLayer, vector<double> nextDeltas);
+    void initializeWeights(int numWeights, shared_ptr<Neuron> newN, double numOut);
+    double finalSigmoidGradient(shared_ptr<Neuron> curN, double expected);
+    double finalLinearGradient(shared_ptr<Neuron> curN, double expected);
+    double hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector<shared_ptr<Neuron>> nextLayer, vector<double> nextDeltas);
     double weightDerivative(double neuronDelta, double input);
     vector<double> sortVector(vector<double> vec);
     bool saveData(string fileName);
     void progressBar(double curVal, double goal);
 
-    vector<vector<Neuron*>> layers;
+    vector<vector<shared_ptr<Neuron>>> layers;
     vector<vector<double>> conversionRates;
     bool conversions = false;
     bool loadedData = false;
