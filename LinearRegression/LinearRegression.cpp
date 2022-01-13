@@ -49,19 +49,21 @@ void LinearRegression::gradientDescent(vector<Point> input) {
     }
     int iterator = 0;
     while (iterator < iterations) {
-        for (int m = 0; m < coefficients.size(); m++) {
-            coefficients[m] -= learningRate * derivM(input, coefficients[m]);
-        }
-        c -= learningRate * derivC(input);
-        iterator++;
-        if (std::isnan(c) || std::isnan(sqrt(costFunction(input)))) {
-            throw std::invalid_argument("Learning rate of " + std::to_string(learningRate)+ " is too high");
-        }
-        if (verbose) {
-            cout << "Iteration #" << iterator << endl;
-            cout << "Coefficient(s): ";
-            printVector(coefficients);
-            cout << "Intercept: " << c << endl << endl;
+        for (int i = 0; i < input.size(); i++) {
+            for (int m = 0; m < coefficients.size(); m++) {
+                coefficients[m] -= learningRate * derivM(input[i], m);
+            }
+            c -= learningRate * derivC(input[i]);
+            iterator++;
+            if (std::isnan(c) || std::isnan(sqrt(costFunction(input)))) {
+                throw std::invalid_argument("Learning rate of " + std::to_string(learningRate)+ " is too high");
+            }
+            if (verbose) {
+                cout << "Iteration #" << iterator << endl;
+                cout << "Coefficient(s): ";
+                printVector(coefficients);
+                cout << "Intercept: " << c << endl << endl;
+            }
         }
     }
 }
@@ -109,20 +111,26 @@ double LinearRegression::costFunction(vector<Point> actualOut) {
     return (total / actualOut.size());
 }
 //Cost function partial derivative with respect to m
-double LinearRegression::derivM(vector<Point> input, int index) {
+double LinearRegression::derivM(Point input, int index) {
+    /*
     double total = 0;
     for (int i = 0; i < input.size(); i++) {
         double result = 2 * (input[i].data[input[i].data.size() - 1] - (predict(input[i]))) * -input[i].data[index];
         total += result;
     }
     return total / input.size();
+     */
+    return 2 * (predict(input) - input.data[input.data.size() - 1]) * input.data[index];
 }
 //Cost function partial derivative with respect to c
-double LinearRegression::derivC(vector<Point> input) {
+double LinearRegression::derivC(Point input) {
+    /*
     double total = 0;
     for (int i = 0; i < input.size(); i++) {
         double prediction = predict(input[i]);
         total += -2 * (input[i].data[input[i].data.size() - 1] - prediction);
     }
     return total / input.size();
+     */
+    return 2 * (predict(input) - input.data[input.data.size() - 1]);
 }

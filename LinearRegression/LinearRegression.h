@@ -57,8 +57,8 @@ public:
 private:
 
     double costFunction(vector<Point> actualOut);
-    double derivM(vector<Point> actualOut, int index);
-    double derivC(vector<Point> actualOut);
+    double derivM(Point actualOut, int index);
+    double derivC(Point actualOut);
     double learningRate, c;
     vector<double> coefficients;
     int iterations;
