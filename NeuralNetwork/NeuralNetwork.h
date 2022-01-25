@@ -39,6 +39,7 @@ public:
         vector<double> prevInputs;
         vector<double> prevGradients;
         double prevBias;
+        double preOut;
         double output;
         double delta;
         double calculate(vector<double> input);
@@ -107,18 +108,19 @@ public:
 private:
 
     vector<double> predictTest(vector<double> unknownP);
-    double sigmoid(double input);
-    double sigmoidDeriv(double input);
-    double relu(double input);
-    double reluDeriv(double input);
+    double sigmoid(double input) const;
+    double sigmoidDeriv(double input) const;
+    double relu(double input) const;
+    double reluDeriv(double input) const;
     void initializeWeights(int numWeights, shared_ptr<Neuron> newN, double numOut);
-    double finalSigmoidGradient(shared_ptr<Neuron> curN, double expected);
-    double finalLinearGradient(shared_ptr<Neuron> curN, double expected);
-    double hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector<shared_ptr<Neuron>> nextLayer, vector<double> nextDeltas);
-    double weightDerivative(double neuronDelta, double input);
+    double finalSigmoidGradient(shared_ptr<Neuron> curN, double expected) const;
+    double finalLinearGradient(shared_ptr<Neuron> curN, double expected) const;
+    double hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector<shared_ptr<Neuron>> nextLayer, vector<double> nextDeltas) const;
+    double weightDerivative(double neuronDelta, double input) const;
     vector<double> sortVector(vector<double> vec);
     bool saveData(string fileName);
     void progressBar(double curVal, double goal);
+    vector<double> rSquared(vector<vector<double>> predicted, vector<vector<double>> target);
 
     vector<vector<shared_ptr<Neuron>>> layers;
     vector<vector<double>> conversionRates;

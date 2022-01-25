@@ -52,7 +52,7 @@ int main() {
     //test_mnist_config();
 
     //regression configuration that trains a neural network on residential structure data and predicts cooling load
-    //energy_config();
+    energy_config();
 
     //regression config for excitation current of synchronous machines
     //synchronous_machine_config();
@@ -60,8 +60,8 @@ int main() {
     //classification config that predicts a class of Cherenkov radiation producing event
     //gamma_ray_config();
 
-    //regression config for determining diameter of asteroids based on various orbital traits
-    pulsar_config();
+    //classification config that predicts whether signals are pulsars or not
+    //pulsar_config();
 
     return 0;
 }
@@ -468,15 +468,17 @@ void cancer_minibatch_config() {
 }
 
 void energy_config() {
-    double learningRate = 0.01;
-    double momentum = 0.0;
-    double dropOutRate = 0.5;
+    double learningRate = 0.0001;
+    double momentum = 0.9;
+    double dropOutRate = 1.0;
+    int earlyStopping = 25;
     //number of layers excluding input layer
-    double splitRatio = 0.75;
+    vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {10, 1};
+    vector<int> neuronCounts = {15, 1};
     //best with 200
-    int iterations = 100;
+    int maxIterations = 10000;
+    int minIterations = 100;
     string fileName = "energyefficiency.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -486,6 +488,7 @@ void energy_config() {
     cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
     NeuralNetwork net(neuronCounts, learningRate, momentum);
     net.setDropOut(dropOutRate);
+    net.setEarlyStopping(earlyStopping);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Network construction successful!" << endl << endl;
 
@@ -517,28 +520,32 @@ void energy_config() {
 
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Splitting data with a training:test ratio of "<< splitRatio * 100 << ":" << (1 - splitRatio) * 100 << "..." << endl;
-    auto trainData = net.vectorSplit(data, 0, ceil(data.size() * splitRatio));
-    auto testData = net.vectorSplit(data, ceil(data.size() * splitRatio), data.size() - 1);
-    auto trainExpected = net.vectorSplit(expected, 0, ceil(expected.size() * splitRatio));
-    auto testExpected = net.vectorSplit(expected, ceil(expected.size() * splitRatio), expected.size() - 1);
+    cout << "Splitting data with a training:validation:test ratio of "<< splitRatios[0] * 100 << ":" << splitRatios[1] * 100 << ":" << splitRatios[2] * 100 << "..." << endl;
+    auto allData = net.trainValTestSplit(data, splitRatios);
+    auto allTargets = net.trainValTestSplit(expected, splitRatios);
+    auto trainData = allData[0];
+    auto valData = allData[1];
+    auto testData = allData[2];
+    auto trainTargets = allTargets[0];
+    auto valTargets = allTargets[1];
+    auto testTargets = allTargets[2];
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data split!" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Training with " << trainData.size() << " data points over " << iterations << " iteration(s) | dropout rate: " << dropOutRate << endl;
-    net.train(trainData, trainExpected, iterations);
+    cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s) | dropout rate: " << dropOutRate << endl;
+    net.train(trainData, trainTargets, valData, valTargets, minIterations, maxIterations);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Testing with " << testData.size() << " data points..." << endl;
     SetConsoleTextAttribute(hConsole, 10);
-    double testResult = net.test(testData, testExpected);
+    double testResult = net.test(testData, testTargets);
     cout << "Testing complete!" << endl;
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Mean Squared Error: " << testResult << endl;
-    cout << "Mean Error: " << sqrt(testResult) << endl << endl;
+    cout << "Validation R^2: " << net.test(valData, valTargets) << endl;
+    cout << "Testing R^2: " << testResult << endl << endl;
 
     vector<double> example = {0.9,563.5,318.5,122.5,7,3,0.4,3};
     cout << "Predicting Cooling Load of Residential Building Sample 630:" << endl;

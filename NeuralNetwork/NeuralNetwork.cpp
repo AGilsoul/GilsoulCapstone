@@ -257,7 +257,7 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
             iterationsDecreased = 0;
             prevAccuracy = valAccuracy;
         }
-        if (iterationsDecreased == this->earlyStopping and z >= minIterations) {
+        if (iterationsDecreased >= this->earlyStopping and z >= minIterations) {
             break;
         }
     }
@@ -540,12 +540,11 @@ double NeuralNetwork::test(vector<vector<double>>& testData, vector<vector<doubl
         return accuracy / testData.size() * 100;
     }
     else {
-        double totalError = 0;
-        for (unsigned int i = 0; i < testData.size(); i++) {
-            auto result = predictTest(testData[i]);
-            totalError += pow((result[0] - testLabel[i][0]), 2);
+        vector<vector<double>> predictedVals;
+        for (int i = 0; i < testData.size(); i++) {
+            predictedVals.push_back(predictTest(testData[i]));
         }
-        return totalError / testData.size();
+        return rSquared(predictedVals, testLabel)[1];
     }
 }
 
@@ -639,17 +638,17 @@ vector<double> NeuralNetwork::predictTest(vector<double> unknownP) {
 
 
 //sigmoid activation function
-double NeuralNetwork::sigmoid(double input) {
+double NeuralNetwork::sigmoid(double input) const {
     return 1 / (1 + exp(-input));
 }
 
 //derivative of sigmoid function
-double NeuralNetwork::sigmoidDeriv(double input) {
+double NeuralNetwork::sigmoidDeriv(double input) const {
     return sigmoid(input) * (1 - sigmoid(input));
 }
 
 //ReLu activation function
-double NeuralNetwork::relu(double input) {
+double NeuralNetwork::relu(double input) const {
     if (input > 0) {
         return input;
     }
@@ -657,7 +656,7 @@ double NeuralNetwork::relu(double input) {
 }
 
 //ReLu function derivative, slightly modified
-double NeuralNetwork::reluDeriv(double input) {
+double NeuralNetwork::reluDeriv(double input) const {
     if (input > 0) {
         return 1;
     }
@@ -686,16 +685,16 @@ void NeuralNetwork::initializeWeights(int numWeights, shared_ptr<Neuron> newN, d
 }
 
 //gradient descent method for final layer
-double NeuralNetwork::finalSigmoidGradient(shared_ptr<Neuron> curN, double expected) {
+double NeuralNetwork::finalSigmoidGradient(shared_ptr<Neuron> curN, double expected) const {
     return 2 * sigmoidDeriv(curN->output) * (sigmoid(curN->output) - expected);
 }
 
-double NeuralNetwork::finalLinearGradient(shared_ptr<Neuron> curN, double expected) {
+double NeuralNetwork::finalLinearGradient(shared_ptr<Neuron> curN, double expected) const {
     return 2 * (curN->output - expected);
 }
 
 //gradient descent method for hidden layers
-double NeuralNetwork::hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector<shared_ptr<Neuron>> nextLayer, vector<double> nextDeltas) {
+double NeuralNetwork::hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector<shared_ptr<Neuron>> nextLayer, vector<double> nextDeltas) const {
     double total = 0;
     for (unsigned int i = 0; i < nextLayer.size(); i++) {
         auto newN = nextLayer[i];
@@ -705,7 +704,7 @@ double NeuralNetwork::hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector
 }
 
 //Gets the derivative to be applied to weights
-double NeuralNetwork::weightDerivative(double neuronDelta, double input) {
+double NeuralNetwork::weightDerivative(double neuronDelta, double input) const {
     return neuronDelta * input;
 }
 
@@ -780,4 +779,30 @@ void NeuralNetwork::progressBar(double curVal, double goal) {
     }
     cout << "] " << int(progress * 100.0) << " %\n\r";
     cout.flush();
+}
+
+vector<double> NeuralNetwork::rSquared(vector<vector<double>> predicted, vector<vector<double>> target) {
+    vector<double> residualVals;
+    for (int i = 0; i < predicted.size(); i++) {
+        residualVals.push_back(target[i][0] - predicted[i][0]);
+    }
+    double residualSquared = 0;
+    for (int i = 0; i < residualVals.size(); i++) {
+        residualSquared += pow(residualVals[i], 2);
+    }
+    double targetAverage = 0.0;
+    for (int i = 0; i < target.size(); i++) {
+        targetAverage += target[i][0];
+    }
+    targetAverage /= target.size();
+    double sumSquares = 0;
+    for (int i = 0; i < target.size(); i++) {
+        sumSquares += pow(target[i][0] - targetAverage, 2);
+    }
+    double mse = 0.0;
+    for (int i = 0; i < residualVals.size(); i++) {
+        mse += pow(residualVals[i], 2);
+    }
+    mse /= residualVals.size();
+    return {mse, 1 - (residualSquared / sumSquares)};
 }
