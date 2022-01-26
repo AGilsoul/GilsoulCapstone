@@ -468,16 +468,16 @@ void cancer_minibatch_config() {
 }
 
 void energy_config() {
-    double learningRate = 0.0001;
-    double momentum = 0.9;
+    double learningRate = 0.001;
+    double momentum = 0.0;
     double dropOutRate = 1.0;
-    int earlyStopping = 25;
+    int earlyStopping = 15;
     //number of layers excluding input layer
     vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {15, 1};
+    vector<int> neuronCounts = {15, 15, 1};
     //best with 200
-    int maxIterations = 10000;
+    int maxIterations = 1000;
     int minIterations = 100;
     string fileName = "energyefficiency.csv";
     vector<vector<double>> data, expected;
