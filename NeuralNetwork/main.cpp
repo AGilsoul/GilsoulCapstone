@@ -471,7 +471,7 @@ void energy_config() {
     double learningRate = 0.001;
     double momentum = 0.0;
     double dropOutRate = 1.0;
-    int earlyStopping = 15;
+    int earlyStopping = 10;
     //number of layers excluding input layer
     vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
@@ -497,11 +497,6 @@ void energy_config() {
     energyFile(data, expected, fileName);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data collected!" << endl << endl;
-    SetConsoleTextAttribute(hConsole, 15);
-    cout << "Normalizing data..." << endl;
-    net.normalize(data);
-    SetConsoleTextAttribute(hConsole, 10);
-    cout << "Data normalized!" << endl << endl;
 
     vector<int> indexes;
     indexes.reserve(data.size());
@@ -518,7 +513,6 @@ void energy_config() {
     data = newData;
     expected = newExpect;
 
-
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Splitting data with a training:validation:test ratio of "<< splitRatios[0] * 100 << ":" << splitRatios[1] * 100 << ":" << splitRatios[2] * 100 << "..." << endl;
     auto allData = net.trainValTestSplit(data, splitRatios);
@@ -531,6 +525,14 @@ void energy_config() {
     auto testTargets = allTargets[2];
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data split!" << endl << endl;
+
+    SetConsoleTextAttribute(hConsole, 15);
+    cout << "Normalizing data..." << endl;
+    net.normalize(trainData);
+    net.normalize(valData);
+    net.normalize(testData);
+    SetConsoleTextAttribute(hConsole, 10);
+    cout << "Data normalized!" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s) | dropout rate: " << dropOutRate << endl;
@@ -547,8 +549,10 @@ void energy_config() {
     cout << "Validation R^2: " << net.test(valData, valTargets) << endl;
     cout << "Testing R^2: " << testResult << endl << endl;
 
-    vector<double> example = {0.9,563.5,318.5,122.5,7,3,0.4,3};
-    cout << "Predicting Cooling Load of Residential Building Sample 630:" << endl;
+    vector<double> example = {0.76,661.5,416.5,122.5,7,4,0.4,3};
+    vector<vector<double>> feed = {example};
+    net.normalize(feed);
+    cout << "Predicting Cooling Load of Residential Building Sample 647:" << endl;
     cout << "Relative Compactness: " << example[0] << endl;
     cout << "Surface Area: " << example[1] << " m^2" << endl;
     cout << "Wall Area: " << example[2] << " m^2" << endl;

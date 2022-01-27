@@ -89,10 +89,7 @@ void NeuralNetwork::normalize(vector<vector<double>>& input, vector<double> minM
                 conversionRates.push_back(tempFactors);
             }
         }
-
         conversions = true;
-
-
     }
     else {
         for (unsigned int p = 0; p < input[0].size(); p++) {
