@@ -226,9 +226,9 @@ void mnist_config() {
     //neuron counts for hidden and output layers
     vector<int> neuronCounts = {200, 10};
     //best with 200
-    int minIterations = 20;
+    int minIterations = 40;
     int maxIterations = 1000;
-    int earlyStopping = 20;
+    int earlyStopping = 50;
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -301,16 +301,16 @@ void mnist_config() {
 }
 
 void cancer_config() {
-    double learningRate = 0.01;
-    double momentum = 0.9;
+    double learningRate = 0.001;
+    double momentum = 0.0;
     double dORate = 0.5;
     //number of layers excluding input layer
     vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
     vector<int> neuronCounts = {30, 2};
     //best with 200
-    int maxIterations = 10000;
-    int minIterations = 30;
+    int maxIterations = 1000;
+    int minIterations = 250;
     int earlyStopping = 20;
     string fileName = "Breast_Cancer.csv";
     vector<vector<double>> data, expected;
@@ -320,7 +320,7 @@ void cancer_config() {
     cout << "********************************************************" << endl << endl;
     cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
     NeuralNetwork net(neuronCounts, learningRate, momentum, false);
-    net.setDropOut(dORate);
+    //net.setDropOut(dORate);
     net.setEarlyStopping(earlyStopping);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Network construction successful!" << endl << endl;
@@ -353,8 +353,8 @@ void cancer_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Splitting data with a training:validation:test ratio of "<< splitRatios[0] * 100 << ":" << splitRatios[1] * 100 << ":" << splitRatios[2] * 100 << "..." << endl;
-    auto allData = net.trainValTestSplit(newData, {.6, .2, .2});
-    auto allLabels = net.trainValTestSplit(newExpect, {.6, .2, .2});
+    auto allData = net.trainValTestSplit(data, {.6, .2, .2});
+    auto allLabels = net.trainValTestSplit(expected, {.6, .2, .2});
     auto trainData = allData[0];
     auto trainExpected = allLabels[0];
     auto valData = allData[1];

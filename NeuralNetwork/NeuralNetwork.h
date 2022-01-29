@@ -33,14 +33,14 @@ public:
      * Calculates output using output from previous layer as input
      */
     struct Neuron {
-        Neuron() { bias = 0; }
+        Neuron(): bias(0) {}
         vector<double> weights;
         double bias;
         vector<double> prevInputs;
         vector<double> prevGradients;
         double prevBias;
-        double preOut;
         double output;
+        double activatedOutput;
         double delta;
         double calculate(vector<double> input);
     };
@@ -108,12 +108,12 @@ public:
 private:
 
     vector<double> predictTest(vector<double> unknownP);
-    double sigmoid(double input) const;
-    double sigmoidDeriv(double input) const;
+    vector<double> softmax();
+    vector<double> softmaxDeriv();
     double relu(double input) const;
     double reluDeriv(double input) const;
     void initializeWeights(int numWeights, shared_ptr<Neuron> newN, double numOut);
-    double finalSigmoidGradient(shared_ptr<Neuron> curN, double expected) const;
+    vector<double> finalSoftmaxGradient(vector<double> targets);
     double finalLinearGradient(shared_ptr<Neuron> curN, double expected) const;
     double hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector<shared_ptr<Neuron>> nextLayer, vector<double> nextDeltas) const;
     double weightDerivative(double neuronDelta, double input) const;

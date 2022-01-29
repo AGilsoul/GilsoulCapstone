@@ -198,19 +198,26 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
             //sets up the nextDelta variables for the hidden layers
             vector<double> nextDeltas;
             //output layer back propagation
-            for (unsigned int neuronCount = 0; neuronCount < layers[layers.size() - 1].size();neuronCount++) {
-                //current neuron
-                auto curN = layers[layers.size()- 1][neuronCount];
-                //gets the derivative of the neuron with respect to the expected output
-                if (layers[layers.size() - 1].size() != 1) {
-                    curN->delta = finalSigmoidGradient(curN, desiredResult[neuronCount]);
-                }
-                else {
+            if (layers[layers.size()-1].size() == 1) {
+                for (unsigned int neuronCount = 0; neuronCount < layers[layers.size() - 1].size();neuronCount++) {
+                    //current neuron
+                    auto curN = layers[layers.size()- 1][neuronCount];
+                    //gets the derivative of the neuron with respect to the expected output
                     curN->delta = finalLinearGradient(curN, desiredResult[neuronCount]);
+
+                    //adds the delta to the nextDeltas vector
+                    nextDeltas.push_back(curN->delta);
                 }
-                //adds the delta to the nextDeltas vector
-                nextDeltas.push_back(curN->delta);
             }
+            else {
+                nextDeltas = finalSoftmaxGradient(desiredResult);
+                for (int i = 0; i < layers[layers.size()-1].size(); i++) {
+                    auto curN = layers[layers.size()- 1][i];
+                    curN->delta = nextDeltas[i];
+                }
+            }
+
+
             //hidden layer backprop for every hidden layer
             for (int layerCount = layers.size() - 2; layerCount >= 0; layerCount--) {
                 //tempDeltas vector, will be the nextDeltas vector for the previous layer
@@ -247,14 +254,14 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
         }
         double valAccuracy = test(valInput, valResults);
         double trainAccuracy = test(trainInput, trainResults);
-        if (valAccuracy < prevAccuracy) {
+        if (valAccuracy < prevAccuracy and z >= minIterations) {
             iterationsDecreased++;
         }
         else {
             iterationsDecreased = 0;
             prevAccuracy = valAccuracy;
         }
-        if (iterationsDecreased >= this->earlyStopping and z >= minIterations) {
+        if (iterationsDecreased >= this->earlyStopping) {
             break;
         }
     }
@@ -285,19 +292,24 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
             //sets up the nextDelta variables for the hidden layers
             vector<double> nextDeltas;
             //output layer back propagation
-            for (unsigned int neuronCount = 0; neuronCount < layers[layers.size() - 1].size();neuronCount++) {
-                //current neuron
-                auto curN = layers[layers.size()- 1][neuronCount];
-                //gets the derivative of the neuron with respect to the expected output
-                if (layers[layers.size() - 1].size() != 1) {
-                    curN->delta = finalSigmoidGradient(curN, desiredResult[neuronCount]);
-                }
-                else {
+            if (layers[layers.size()-1].size() == 1) {
+                for (unsigned int neuronCount = 0; neuronCount < layers[layers.size() - 1].size();neuronCount++) {
+                    //current neuron
+                    auto curN = layers[layers.size()- 1][neuronCount];
+                    //gets the derivative of the neuron with respect to the expected output
                     curN->delta = finalLinearGradient(curN, desiredResult[neuronCount]);
+                    //adds the delta to the nextDeltas vector
+                    nextDeltas.push_back(curN->delta);
                 }
-                //adds the delta to the nextDeltas vector
-                nextDeltas.push_back(curN->delta);
             }
+            else {
+                nextDeltas = finalSoftmaxGradient(desiredResult);
+                for (int i = 0; i < layers[layers.size()-1].size(); i++) {
+                    auto curN = layers[layers.size()- 1][i];
+                    curN->delta = nextDeltas[i];
+                }
+            }
+
             //hidden layer backprop for every hidden layer
             for (int layerCount = layers.size() - 2; layerCount >= 0; layerCount--) {
                 //tempDeltas vector, will be the nextDeltas vector for the previous layer
@@ -395,19 +407,25 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
                 //sets up the nextDelta variables for the hidden layers
                 vector<double> nextDeltas;
                 //output layer back propagation
-                for (unsigned int neuronCount = 0; neuronCount < layers[layers.size() - 1].size(); neuronCount++) {
-                    //current neuron
-                    auto curN = layers[layers.size() - 1][neuronCount];
-                    //gets the derivative of the neuron with respect to the expected output
-                    if (layers[layers.size() - 1].size() != 1) {
-                        curN->delta = finalSigmoidGradient(curN, desiredResult[neuronCount]);
-                    }
-                    else {
+                if (layers[layers.size()-1].size() == 1) {
+                    for (unsigned int neuronCount = 0; neuronCount < layers[layers.size() - 1].size();neuronCount++) {
+                        //current neuron
+                        auto curN = layers[layers.size()- 1][neuronCount];
+                        //gets the derivative of the neuron with respect to the expected output
                         curN->delta = finalLinearGradient(curN, desiredResult[neuronCount]);
+
+                        //adds the delta to the nextDeltas vector
+                        nextDeltas.push_back(curN->delta);
                     }
-                    //adds the delta to the nextDeltas vector
-                    nextDeltas.push_back(curN->delta);
                 }
+                else {
+                    nextDeltas = finalSoftmaxGradient(desiredResult);
+                    for (int i = 0; i < layers[layers.size()-1].size(); i++) {
+                        auto curN = layers[layers.size()- 1][i];
+                        curN->delta = nextDeltas[i];
+                    }
+                }
+
                 //hidden layer backprop for every hidden layer
                 for (int layerCount = layers.size() - 2; layerCount >= 0; layerCount--) {
                     //tempDeltas vector, will be the nextDeltas vector for the previous layer
@@ -454,38 +472,34 @@ vector<double> NeuralNetwork::forwardProp(vector<double> input, double chanceDro
         vector<double> layerResults;
         //for every neuron in each layer
         for (unsigned int neuronIndex = 0; neuronIndex < layers[layerIndex].size(); neuronIndex++) {
-            auto tempNPointer = layers[layerIndex][neuronIndex];
+            auto curN = layers[layerIndex][neuronIndex];
             //calculates neuron output
-            double neuronResult = tempNPointer->calculate(data);
+            double neuronResult = curN->calculate(data);
             double val = ((double) rand() / (RAND_MAX));
             if (val < 1 - chanceDropout) {
                 neuronResult = 0;
             }
-            tempNPointer->prevInputs = data;
-            tempNPointer->output = neuronResult;
+            curN->prevInputs = data;
+            curN->output = neuronResult;
             //adds ReLu activation of neuron calculation to layer results vector
             layerResults.push_back(relu(neuronResult));
         }
         //forward propagates the results to the next layer
         data = layerResults;
     }
-
     vector<double> newLayerResults;
-    //for each neuron in the output layer
-    for (unsigned int neuronIndex = 0; neuronIndex < layers[layers.size() - 1].size(); neuronIndex++) {
-        auto tempNPointer = layers[layers.size() - 1][neuronIndex];
-        //calculates current neuron output
-        double neuronResult = tempNPointer->calculate(data);
-        tempNPointer->prevInputs = data;
-        tempNPointer->output = neuronResult;
-        if (layers[layers.size() - 1].size() == 1) {
-            newLayerResults.push_back(neuronResult);
-        }
-        else {
-            //adds sigmoid activation of neuron result to layer results vector
-            newLayerResults.push_back(sigmoid(neuronResult));
-        }
-
+    //output layer forward prop
+    auto outputLayer = layers[layers.size()-1];
+    for (unsigned int neuronCount = 0; neuronCount < outputLayer.size(); neuronCount++) {
+        auto curN = outputLayer[neuronCount];
+        double neuronResult = curN->calculate(data);
+        curN->output = neuronResult;
+    }
+    if (outputLayer.size() == 1) {
+        newLayerResults.push_back(outputLayer[0]->output);
+    }
+    else {
+        newLayerResults = softmax();
     }
     data = newLayerResults;
     return data;
@@ -633,15 +647,38 @@ vector<double> NeuralNetwork::predictTest(vector<double> unknownP) {
     return newResult;
 }
 
-
-//sigmoid activation function
-double NeuralNetwork::sigmoid(double input) const {
-    return 1 / (1 + exp(-input));
+//softmax activation function
+vector<double> NeuralNetwork::softmax() {
+    double denominator = 0;
+    vector<double> results;
+    auto outLayer = layers[layers.size()-1];
+    for (int i = 0; i < outLayer.size(); i++) {
+        auto curN = outLayer[i];
+        denominator += exp(curN->output);
+    }
+    for (int i = 0; i < outLayer.size(); i++) {
+        auto curN = outLayer[i];
+        double result = exp(curN->output) / denominator;
+        results.push_back(result);
+        layers[layers.size()-1][i]->activatedOutput = result;
+    }
+    return results;
 }
 
-//derivative of sigmoid function
-double NeuralNetwork::sigmoidDeriv(double input) const {
-    return sigmoid(input) * (1 - sigmoid(input));
+//maybe not needed
+vector<double> NeuralNetwork::softmaxDeriv() {
+    auto outputLayer = layers[layers.size()-1];
+    double denominator = 0;
+    for (int i = 0; i < outputLayer.size(); i++) {
+        auto curN = outputLayer[i];
+        denominator += exp(curN->output);
+    }
+    vector<double> gradients;
+    for (int i = 0; i < outputLayer.size(); i++) {
+        auto curN = outputLayer[i];
+        gradients.push_back((exp(curN->output) * denominator - pow(exp(curN->output), 2)) / pow(denominator, 2));
+    }
+    return gradients;
 }
 
 //ReLu activation function
@@ -682,8 +719,18 @@ void NeuralNetwork::initializeWeights(int numWeights, shared_ptr<Neuron> newN, d
 }
 
 //gradient descent method for final layer
-double NeuralNetwork::finalSigmoidGradient(shared_ptr<Neuron> curN, double expected) const {
-    return 2 * sigmoidDeriv(curN->output) * (sigmoid(curN->output) - expected);
+vector<double> NeuralNetwork::finalSoftmaxGradient(vector<double> target) {
+    vector<double> resultingGradients;
+    auto outputLayer = layers[layers.size()-1];
+    //auto sDerivs = softmaxDeriv();
+    for (int i = 0; i < target.size(); i++) {
+        auto curN = outputLayer[i];
+        //this didn't work???
+        //resultingGradients.push_back(-1 * target[i] * (1 / curN->activatedOutput) * sDerivs[i]);
+        //but this thing that looks like MSE does
+        resultingGradients.push_back(curN->activatedOutput - target[i]);
+    }
+    return resultingGradients;
 }
 
 double NeuralNetwork::finalLinearGradient(shared_ptr<Neuron> curN, double expected) const {
