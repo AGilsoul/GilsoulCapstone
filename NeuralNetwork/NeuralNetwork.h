@@ -113,6 +113,7 @@ private:
     double relu(double input) const;
     double reluDeriv(double input) const;
     void initializeWeights(int numWeights, shared_ptr<Neuron> newN, double numOut);
+    void resetGradients();
     vector<double> finalSoftmaxGradient(vector<double> targets);
     double finalLinearGradient(shared_ptr<Neuron> curN, double expected) const;
     double hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector<shared_ptr<Neuron>> nextLayer, vector<double> nextDeltas) const;

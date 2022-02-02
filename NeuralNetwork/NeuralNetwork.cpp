@@ -182,6 +182,9 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
             initializeWeights(trainInput[0].size(), layers[0][i], layers[1].size());
         }
     }
+    else {
+        resetGradients();
+    }
     int actualIters = 0;
     //for every iteration
     for (unsigned int z = 0; z < maxIterations; z++) {
@@ -278,6 +281,9 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
             initializeWeights(input[0].size(), layers[0][i], layers[1].size());
         }
     }
+    else {
+        resetGradients();
+    }
     //for every iteration
     for (unsigned int z = 0; z < iterations; z++) {
         if (this->verbose) {
@@ -348,15 +354,17 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
     loadedData = true;
 }
 
-void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize)  {
+void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize) {
     double lr = learningRate;
     double m = momentum;
-    //numBatches += 1;
     //initialize input neuron weights
     if (!loadedData) {
         for (unsigned int i = 0; i < layers[0].size(); i++) {
             initializeWeights(input[0].size(), layers[0][i], layers[1].size());
         }
+    }
+    else {
+        resetGradients();
     }
 
     //for every iteration
@@ -367,15 +375,14 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
         vector<vector<vector<double>>> batches;
         vector<vector<vector<double>>> batchResults;
 
+        int numBatches = floor(input.size() / batchSize);
 
         vector<int> indexes;
         indexes.reserve(input.size());
-        for (int i = 0; i < input.size(); ++i) {
+        for (int i = 0; i < input.size(); ++i)
             indexes.push_back(i);
-        }
-        std::random_shuffle(indexes.begin(), indexes.end());
 
-        int numBatches = floor(input.size() / batchSize);
+        std::random_shuffle(indexes.begin(), indexes.end());
 
         //for every batch
         for (unsigned int i = 0; i < numBatches; i++) {
@@ -412,7 +419,7 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
                         //current neuron
                         auto curN = layers[layers.size()- 1][neuronCount];
                         //gets the derivative of the neuron with respect to the expected output
-                        curN->delta = finalLinearGradient(curN, desiredResult[neuronCount]);
+                        curN->delta += finalLinearGradient(curN, desiredResult[neuronCount]);
 
                         //adds the delta to the nextDeltas vector
                         nextDeltas.push_back(curN->delta);
@@ -422,7 +429,7 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
                     nextDeltas = finalSoftmaxGradient(desiredResult);
                     for (int i = 0; i < layers[layers.size()-1].size(); i++) {
                         auto curN = layers[layers.size()- 1][i];
-                        curN->delta = nextDeltas[i];
+                        curN->delta += nextDeltas[i];
                     }
                 }
 
@@ -432,7 +439,7 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
                     vector<double> tempDeltas;
                     //for every neuron in the hidden layer
                     for (unsigned int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
-                        //current enuron
+                        //current neuron
                         auto curN = layers[layerCount][neuronCount];
                         //gets the derivative of the neuron with respect to the next layer neurons
                         curN->delta += hiddenGradient(curN, neuronCount, layers[layerCount + 1], nextDeltas);
@@ -462,6 +469,7 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
             }
         }
     }
+    loadedData = true;
 }
 
 //forward propagation method
@@ -718,8 +726,19 @@ void NeuralNetwork::initializeWeights(int numWeights, shared_ptr<Neuron> newN, d
     newN->delta = 0;
 }
 
+void NeuralNetwork::resetGradients() {
+    for (int l = 0; l < layers.size(); l++) {
+        for (int n = 0; n < layers[l].size(); n++) {
+            layers[l][n]->prevBias = 0;
+            for (int g = 0; g < layers[l][n]->prevGradients.size(); g++) {
+                layers[l][n]->prevGradients[g] = 0;
+            }
+        }
+    }
+}
+
 //gradient descent method for final layer
-vector<double> NeuralNetwork::finalSoftmaxGradient(vector<double> target) {
+vector<double> NeuralNetwork:: finalSoftmaxGradient(vector<double> target) {
     vector<double> resultingGradients;
     auto outputLayer = layers[layers.size()-1];
     //auto sDerivs = softmaxDeriv();

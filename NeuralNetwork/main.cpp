@@ -46,13 +46,13 @@ int main() {
 
     //configuration that trains and tests a neural network on handwritten digits
     //WARNING: TAKES A VERY LONG TIME, JUST LOAD THE PRE-TRAINED NETWORK
-    //mnist_config();
+    mnist_config();
 
     //configuration that loads pre-trained neural network for digit recognition, and retrains with mini-batch gradient descent
     //test_mnist_config();
 
     //regression configuration that trains a neural network on residential structure data and predicts cooling load
-    energy_config();
+    //energy_config();
 
     //regression config for excitation current of synchronous machines
     //synchronous_machine_config();
@@ -219,26 +219,27 @@ void test_mnist_config() {
 }
 
 void mnist_config() {
-    double learningRate = 0.01;
+    double learningRate = 0.001;
     double momentum = 0.9;
-    double dropOutRate = 0.5;
+    //double dropOutRate = 0.5;
     vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {200, 10};
+    vector<int> neuronCounts = {32, 10};
     //best with 200
     int minIterations = 40;
-    int maxIterations = 1000;
-    int earlyStopping = 50;
+    int maxIterations = 200;
+    int earlyStopping = 5;
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << endl << "Neural Network Prediction of Handwritten Digits" << endl;
     cout << "********************************************************" << endl << endl;
-    cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
-    NeuralNetwork net(neuronCounts, learningRate, momentum);
+    cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << endl;
+    NeuralNetwork net(neuronCounts, learningRate);
+    net.setMomentum(momentum);
     net.setEarlyStopping(earlyStopping);
-    net.setDropOut(dropOutRate);
+    //net.setDropOut(dropOutRate);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Network construction successful!" << endl << endl;
 
@@ -282,8 +283,11 @@ void mnist_config() {
     cout << "Data split!" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s)..." << endl;
-    net.train(trainData, trainExpected, valData, valExpected, minIterations, maxIterations);
+    cout << "Training with mini-batch supplemented by SGD..." << endl;
+    //net.train(trainData, trainExpected, valData, valExpected, minIterations, maxIterations);
+    //net.train(trainData, trainExpected, 100);
+    net.trainMiniBatch(trainData, trainExpected, 50, 32);
+    net.train(trainData, trainExpected, valData, valExpected, 1, 20);
     //net.saveModel("mnist_train_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
@@ -302,8 +306,8 @@ void mnist_config() {
 
 void cancer_config() {
     double learningRate = 0.001;
-    double momentum = 0.0;
-    double dORate = 0.5;
+    double momentum = 0.9;
+    //double dORate = 0.5;
     //number of layers excluding input layer
     vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
@@ -366,7 +370,7 @@ void cancer_config() {
     cout << "Data split!" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s) |  early stopping: " << earlyStopping << " | dropout rate: " << dORate << endl;
+    cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s) |  early stopping: " << earlyStopping << endl;
     net.train(trainData, trainExpected, valData, valExpected, minIterations, maxIterations);
     //net.saveModel("nn_cancer_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
@@ -393,8 +397,8 @@ void cancer_minibatch_config() {
     //neuron counts for hidden and output layers
     vector<int> neuronCounts = {15, 2};
     //best with 200
-    int iterations = 200;
-    int batchSize = 2;
+    int iterations = 100;
+    int batchSize = 32;
     string fileName = "Breast_Cancer.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
