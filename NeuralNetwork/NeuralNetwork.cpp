@@ -2,7 +2,7 @@
 // Created by Alex Gilsoul on 10/19/2021.
 //
 
-#include "NeuralNetwork.h"
+#include "../include/NeuralNetwork.h"
 
 
 //Public Methods
@@ -187,6 +187,7 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
     }
     int actualIters = 0;
     //for every iteration
+    if (this->verbose) cout << "SGD Progress:" << endl;
     for (unsigned int z = 0; z < maxIterations; z++) {
         actualIters++;
         if (this->verbose) {
@@ -244,7 +245,7 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
                     //updates every weight and previous gradient for the current neuron
                     for (int w = 0; w < curN->weights.size(); w++) {
                         //gets the derivative of weight adjust with the delta of the current neuron and the inputs
-                        double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
+                        double result = weightDerivative(curN->weights[w], curN->delta, curN->prevInputs[w]) * lr;
                         curN->weights[w] -= result + curN->prevGradients[w] * m;
                         curN->prevGradients[w] = result + curN->prevGradients[w] * m;
                     }
@@ -268,6 +269,10 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
             break;
         }
     }
+    if (this->verbose) {
+        this->progressBar(maxIterations, maxIterations);
+        cout << endl;
+    }
     cout << "Trained for " << actualIters << " iterations" << endl;
     loadedData = true;
 }
@@ -285,6 +290,7 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
         resetGradients();
     }
     //for every iteration
+    if (this->verbose) cout << "SGD Progress:" << endl;
     for (unsigned int z = 0; z < iterations; z++) {
         if (this->verbose) {
             this->progressBar(z, iterations);
@@ -339,7 +345,7 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
                     //updates every weight and previous gradient for the current neuron
                     for (int w = 0; w < curN->weights.size(); w++) {
                         //gets the derivative of weight adjust with the delta of the current neuron and the inputs
-                        double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
+                        double result = weightDerivative(curN->weights[w], curN->delta, curN->prevInputs[w]) * lr;
                         curN->weights[w] -= result + curN->prevGradients[w] * m;
                         curN->prevGradients[w] = result + curN->prevGradients[w] * m;
                     }
@@ -350,6 +356,10 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
                 }
             }
         }
+    }
+    if (this->verbose) {
+        this->progressBar(iterations, iterations);
+        cout << endl;
     }
     loadedData = true;
 }
@@ -367,6 +377,7 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
         resetGradients();
     }
 
+    if (this->verbose) cout << "Mini-Batch Progress:" << endl;
     //for every iteration
     for (unsigned int z = 0; z < iterations; z++) {
         if (this->verbose) {
@@ -457,7 +468,7 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
                     //updates every weight and previous gradient for the current neuron
                     for (int w = 0; w < curN->weights.size(); w++) {
                         //gets the derivative of weight adjust with the delta of the current neuron and the inputs
-                        double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
+                        double result = weightDerivative(curN->weights[w], curN->delta, curN->prevInputs[w]) * lr;
                         curN->weights[w] -= (result + curN->prevGradients[w] * m);
                         curN->prevGradients[w] = (result + curN->prevGradients[w] * m);
                     }
@@ -468,6 +479,10 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
                 }
             }
         }
+    }
+    if (this->verbose) {
+        this->progressBar(iterations, iterations);
+        cout << endl;
     }
     loadedData = true;
 }
@@ -767,8 +782,8 @@ double NeuralNetwork::hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector
 }
 
 //Gets the derivative to be applied to weights
-double NeuralNetwork::weightDerivative(double neuronDelta, double input) const {
-    return neuronDelta * input;
+double NeuralNetwork::weightDerivative(double weight, double neuronDelta, double input) const {
+    return neuronDelta * input + (2 * this->weightDecay * weight);
 }
 
 //sorts a vector of doubles
@@ -832,15 +847,15 @@ bool NeuralNetwork::saveData(string fileName) {
 //displays a progress bar
 void NeuralNetwork::progressBar(double curVal, double goal) {
     int barWidth = this->barSize;
-    double progress = double(curVal + 1) / goal;
-    cout << "[";
+    double progress = double(curVal) / goal;
+    cout << "\r[";
     int pos = barWidth * progress;
     for (int i = 0; i < barWidth; ++i) {
         if (i < pos) cout << "=";
         else if (i == pos) cout << ">";
         else cout << " ";
     }
-    cout << "] " << int(progress * 100.0) << " %\n\r";
+    cout << "] " << int(progress * 100.0) << " %";
     cout.flush();
 }
 

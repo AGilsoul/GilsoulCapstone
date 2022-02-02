@@ -6,7 +6,7 @@
 #include <random>
 #include <chrono>
 #include <windows.h>
-#include "NeuralNetwork.h"
+#include "../include/NeuralNetwork.h"
 
 using std::cout;
 using std::endl;
@@ -45,7 +45,6 @@ int main() {
     //cancer_config();
 
     //configuration that trains and tests a neural network on handwritten digits
-    //WARNING: TAKES A VERY LONG TIME, JUST LOAD THE PRE-TRAINED NETWORK
     mnist_config();
 
     //configuration that loads pre-trained neural network for digit recognition, and retrains with mini-batch gradient descent
@@ -62,7 +61,6 @@ int main() {
 
     //classification config that predicts whether signals are pulsars or not
     //pulsar_config();
-
     return 0;
 }
 
@@ -221,14 +219,14 @@ void test_mnist_config() {
 void mnist_config() {
     double learningRate = 0.001;
     double momentum = 0.9;
-    //double dropOutRate = 0.5;
+    double dropOutRate = 0.8;
     vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
     vector<int> neuronCounts = {32, 10};
     //best with 200
     int minIterations = 40;
     int maxIterations = 200;
-    int earlyStopping = 5;
+    int earlyStopping = 10;
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -239,7 +237,8 @@ void mnist_config() {
     NeuralNetwork net(neuronCounts, learningRate);
     net.setMomentum(momentum);
     net.setEarlyStopping(earlyStopping);
-    //net.setDropOut(dropOutRate);
+    net.setVerbose(true);
+    net.setDropOut(dropOutRate);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Network construction successful!" << endl << endl;
 
@@ -284,10 +283,9 @@ void mnist_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with mini-batch supplemented by SGD..." << endl;
-    //net.train(trainData, trainExpected, valData, valExpected, minIterations, maxIterations);
-    //net.train(trainData, trainExpected, 100);
     net.trainMiniBatch(trainData, trainExpected, 50, 32);
-    net.train(trainData, trainExpected, valData, valExpected, 1, 20);
+    //net.train(trainData, trainExpected, valData, valExpected, 1, 100);
+    net.train(trainData, trainExpected, 10);
     //net.saveModel("mnist_train_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
