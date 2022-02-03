@@ -35,6 +35,7 @@ void pulsarFile(vector<vector<double>>& testData, vector<vector<double>>& expect
 
 
 int main() {
+    string placeHolder;
     //configuration that loads a pre-trained neural network for breast tumors
     //test_cancer_config();
 
@@ -61,6 +62,8 @@ int main() {
 
     //classification config that predicts whether signals are pulsars or not
     //pulsar_config();
+    cout << "Press x to continue" << endl;
+    cin >> placeHolder;
     return 0;
 }
 
@@ -369,7 +372,7 @@ void cancer_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s) |  early stopping: " << earlyStopping << endl;
-    net.train(trainData, trainExpected, valData, valExpected, minIterations, maxIterations);
+    net.trainWithValidation(trainData, trainExpected, valData, valExpected, minIterations, maxIterations);
     //net.saveModel("nn_cancer_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl;
@@ -387,7 +390,7 @@ void cancer_config() {
 }
 
 void cancer_minibatch_config() {
-    double learningRate = 0.01;
+    double learningRate = 0.001;
     double momentum = 0.9;
     double dORate = 0.8;
     //number of layers excluding input layer
@@ -396,7 +399,7 @@ void cancer_minibatch_config() {
     vector<int> neuronCounts = {15, 2};
     //best with 200
     int iterations = 100;
-    int batchSize = 32;
+    int batchSize = 2;
     string fileName = "Breast_Cancer.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -406,6 +409,7 @@ void cancer_minibatch_config() {
     cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
     NeuralNetwork net(neuronCounts, learningRate, momentum);
     net.setDropOut(dORate);
+    net.setVerbose(true);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Network construction successful!" << endl << endl;
 
@@ -538,7 +542,7 @@ void energy_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s) | dropout rate: " << dropOutRate << endl;
-    net.train(trainData, trainTargets, valData, valTargets, minIterations, maxIterations);
+    net.trainWithValidation(trainData, trainTargets, valData, valTargets, minIterations, maxIterations);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
 
@@ -720,7 +724,7 @@ void gamma_ray_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations << " iteration(s) | early stopping: " << earlyStopping << " | dropout rate: " << dropOutRate << endl;
-    net.train(trainData, trainLabels, valData, valLabels, minIterations, maxIterations);
+    net.trainWithValidation(trainData, trainLabels, valData, valLabels, minIterations, maxIterations);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
     SetConsoleTextAttribute(hConsole, 15);
@@ -806,7 +810,7 @@ void pulsar_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with " << trainData.size() << " data points over " << minIterations << " < x < " << maxIterations <<" iteration(s) | early stopping: " << earlyStopping << " | dropout rate: " << dropOutRate << endl;
-    net.train(trainData, trainLabels, valData, valLabels, minIterations, maxIterations);
+    net.trainWithValidation(trainData, trainLabels, valData, valLabels, minIterations, maxIterations);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl;
     SetConsoleTextAttribute(hConsole, 15);

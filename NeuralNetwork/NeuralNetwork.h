@@ -12,6 +12,7 @@
 #include <random>
 #include <algorithm>
 #include <chrono>
+#include <thread>
 
 using std::vector;
 using std::cout;
@@ -70,7 +71,7 @@ public:
      */
     void normalize(vector<vector<double>>& input, vector<double> minMaxRange = {});
     void loadData(string fileName);
-    void train(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations);
+    void trainWithValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations);
     void train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations);
     void trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize);
     vector<double> forwardProp(vector<double> input, double chanceDropout);
@@ -113,6 +114,9 @@ public:
 
 private:
 
+    void _trainWithValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations);
+    void _train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations);
+    void _trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize);
     vector<double> predictTest(vector<double> unknownP);
     vector<double> softmax();
     vector<double> softmaxDeriv();
@@ -126,14 +130,18 @@ private:
     double weightDerivative(double weight, double neuronDelta, double input) const;
     vector<double> sortVector(vector<double> vec);
     bool saveData(string fileName);
-    void progressBar(double curVal, double goal);
+    void progressBar();
+    void printBar(int curVal, int goal, int barWidth);
     vector<double> rSquared(vector<vector<double>> predicted, vector<vector<double>> target);
 
     vector<vector<shared_ptr<Neuron>>> layers;
     vector<vector<double>> conversionRates;
     bool conversions = false;
-    bool loadedData = false;
+    shared_ptr<bool> loadedData;
     bool verbose = false;
+    shared_ptr<bool> doneTraining;
+    shared_ptr<double> progressGoal;
+    shared_ptr<double> curProgress;
     int barSize = 70;
     double learningRate;
     double momentum;

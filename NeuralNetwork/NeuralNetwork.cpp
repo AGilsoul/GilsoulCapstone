@@ -25,6 +25,10 @@ NeuralNetwork::NeuralNetwork(vector<int> neurons, double learningRate, double mo
     this->verbose = verbose;
     this->barSize = barSize;
     int numLayers = neurons.size();
+    loadedData = make_shared<bool>(false);
+    doneTraining = make_shared<bool>(false);
+    curProgress = make_shared<double>(0);
+    progressGoal = make_shared<double>(1);
     uint64_t timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed>>32)};
     rng.seed(ss);
@@ -47,6 +51,10 @@ NeuralNetwork::NeuralNetwork(string fileName, bool verbose, int barSize) {
     loadData(fileName);
     this->verbose = verbose;
     this->barSize = barSize;
+    loadedData = make_shared<bool>(true);
+    doneTraining = make_shared<bool>(false);
+    curProgress = make_shared<double>(0);
+    progressGoal = make_shared<double>(0);
 }
 
 //min-max data normalization method
@@ -166,18 +174,17 @@ void NeuralNetwork::loadData(string fileName) {
     }
     conversionRates = tempCovs;
     layers = newLayers;
-    loadedData = true;
+    *loadedData = true;
     conversions = true;
 }
 
 //back propagation method, repeats for every iteration
-void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations) {
-    double lr = learningRate;
-    double m = momentum;
-    double prevAccuracy = 0.0;
-    int iterationsDecreased = 0;
+void NeuralNetwork::trainWithValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults,vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations) {
+    *curProgress = 0;
+    *progressGoal = 1;
+    *doneTraining = false;
     //initialize input neuron weights
-    if (!loadedData) {
+    if (!*loadedData) {
         for (unsigned int i = 0; i < layers[0].size(); i++) {
             initializeWeights(trainInput[0].size(), layers[0][i], layers[1].size());
         }
@@ -185,16 +192,28 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
     else {
         resetGradients();
     }
+    std::thread thread_obj(&NeuralNetwork::_trainWithValidation, *this, trainInput, trainResults, valInput, valResults, minIterations, maxIterations);
+    if (verbose) {
+        std::thread thread_progress(&NeuralNetwork::progressBar, *this);
+        thread_progress.join();
+    }
+    thread_obj.join();
+}
+
+void NeuralNetwork::_trainWithValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations) {
+    double lr = learningRate;
+    double m = momentum;
+    *progressGoal = maxIterations * trainInput.size();
+    double prevAccuracy = 0.0;
+    int iterationsDecreased = 0;
     int actualIters = 0;
     //for every iteration
     if (this->verbose) cout << "SGD Progress:" << endl;
     for (unsigned int z = 0; z < maxIterations; z++) {
         actualIters++;
-        if (this->verbose) {
-            this->progressBar(z, maxIterations);
-        }
         //for every training data point
         for (unsigned int x = 0; x < trainInput.size(); x++) {
+            *curProgress += 1;
             //gets the actual result of the current data point
             auto desiredResult = trainResults[x];
             //gets predicted result from forward propagation
@@ -269,19 +288,17 @@ void NeuralNetwork::train(vector<vector<double>> trainInput, vector<vector<doubl
             break;
         }
     }
-    if (this->verbose) {
-        this->progressBar(maxIterations, maxIterations);
-        cout << endl;
-    }
     cout << "Trained for " << actualIters << " iterations" << endl;
-    loadedData = true;
+    *doneTraining = true;
+    *loadedData = true;
 }
 
 void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations) {
-    double lr = learningRate;
-    double m = momentum;
-    //initialize input neuron weights
-    if (!loadedData) {
+    *curProgress = 0;
+    *progressGoal = 1;
+    *doneTraining = false;
+    // initialize input neuron weights
+    if (!*loadedData) {
         for (unsigned int i = 0; i < layers[0].size(); i++) {
             initializeWeights(input[0].size(), layers[0][i], layers[1].size());
         }
@@ -289,14 +306,24 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
     else {
         resetGradients();
     }
-    //for every iteration
     if (this->verbose) cout << "SGD Progress:" << endl;
+    std::thread thread_obj(&NeuralNetwork::_train, *this, input, allResults, iterations);
+    if (verbose) {
+        std::thread thread_progress(&NeuralNetwork::progressBar, *this);
+        thread_progress.join();
+    }
+    thread_obj.join();
+}
+
+void NeuralNetwork::_train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations) {
+    double lr = learningRate;
+    double m = momentum;
+    *progressGoal = iterations * input.size();
+    //for every iteration
     for (unsigned int z = 0; z < iterations; z++) {
-        if (this->verbose) {
-            this->progressBar(z, iterations);
-        }
         //for every training data point
         for (unsigned int x = 0; x < input.size(); x++) {
+            *curProgress += 1;
             //gets the actual result of the current data point
             auto desiredResult = allResults[x];
             //gets predicted result from forward propagation
@@ -357,18 +384,16 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
             }
         }
     }
-    if (this->verbose) {
-        this->progressBar(iterations, iterations);
-        cout << endl;
-    }
-    loadedData = true;
+    *doneTraining = true;
+    *loadedData = true;
 }
 
 void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize) {
-    double lr = learningRate;
-    double m = momentum;
-    //initialize input neuron weights
-    if (!loadedData) {
+    *curProgress = 0;
+    *progressGoal = 1;
+    *doneTraining = false;
+    // initialize input neuron weights
+    if (!*loadedData) {
         for (unsigned int i = 0; i < layers[0].size(); i++) {
             initializeWeights(input[0].size(), layers[0][i], layers[1].size());
         }
@@ -376,13 +401,21 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
     else {
         resetGradients();
     }
-
     if (this->verbose) cout << "Mini-Batch Progress:" << endl;
+    std::thread thread_obj(&NeuralNetwork::_trainMiniBatch, *this, input, allResults, iterations, batchSize);
+    if (verbose) {
+        std::thread thread_progress(&NeuralNetwork::progressBar, *this);
+        thread_progress.join();
+    }
+    thread_obj.join();
+}
+
+void NeuralNetwork::_trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize) {
+    double lr = learningRate;
+    double m = momentum;
+    *progressGoal = iterations * input.size();
     //for every iteration
     for (unsigned int z = 0; z < iterations; z++) {
-        if (this->verbose) {
-            this->progressBar(z, iterations);
-        }
         vector<vector<vector<double>>> batches;
         vector<vector<vector<double>>> batchResults;
 
@@ -418,6 +451,7 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
             }
             //for every training data point
             for (unsigned int x = 0; x < batches[batchCount].size(); x++) {
+                *curProgress += 1;
                 //gets the actual result of the current data point
                 auto desiredResult = batchResults[batchCount][x];
                 //gets predicted result from forward propagation
@@ -480,11 +514,8 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
             }
         }
     }
-    if (this->verbose) {
-        this->progressBar(iterations, iterations);
-        cout << endl;
-    }
-    loadedData = true;
+    *doneTraining = true;
+    *loadedData = true;
 }
 
 //forward propagation method
@@ -838,15 +869,22 @@ bool NeuralNetwork::saveData(string fileName) {
         }
         saveFile << conversionRates[conversionSize - 1][0] << "," << conversionRates[conversionSize - 1][1];
         saveFile.close();
-
         return true;
     }
     return false;
 }
 
 //displays a progress bar
-void NeuralNetwork::progressBar(double curVal, double goal) {
+void NeuralNetwork::progressBar() {
     int barWidth = this->barSize;
+    while (!*doneTraining) {
+        printBar(*curProgress, *progressGoal, barWidth);
+    }
+    printBar(1, 1, barWidth);
+    cout << endl;
+}
+
+void NeuralNetwork::printBar(int curVal, int goal, int barWidth) {
     double progress = double(curVal) / goal;
     cout << "\r[";
     int pos = barWidth * progress;
