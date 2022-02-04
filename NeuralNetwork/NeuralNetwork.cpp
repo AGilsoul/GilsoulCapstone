@@ -385,10 +385,10 @@ void NeuralNetwork::_train(vector<vector<double>> input, vector<vector<double>> 
                     curN->prevBias = bResult + curN->prevBias * m;
                 }
             }
-        }
-        auto tempDuration = curWatch->elapsed_time() * (iterations * input.size() - *curProgress);
-        if ((fabs(tempDuration - *timeDuration) / *timeDuration) >= 0.05) {
-            *timeDuration = tempDuration;
+            auto tempDuration = curWatch->elapsed_time() * (iterations * input.size() - *curProgress);
+            if ((fabs(tempDuration - *timeDuration) / *timeDuration) >= 0.05) {
+                *timeDuration = tempDuration;
+            }
         }
     }
     *doneTraining = true;
