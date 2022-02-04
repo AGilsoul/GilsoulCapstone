@@ -25,10 +25,6 @@ NeuralNetwork::NeuralNetwork(vector<int> neurons, double learningRate, double mo
     this->verbose = verbose;
     this->barSize = barSize;
     int numLayers = neurons.size();
-    loadedData = make_shared<bool>(false);
-    doneTraining = make_shared<bool>(false);
-    curProgress = make_shared<double>(0);
-    progressGoal = make_shared<double>(1);
     uint64_t timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed>>32)};
     rng.seed(ss);
@@ -51,10 +47,7 @@ NeuralNetwork::NeuralNetwork(string fileName, bool verbose, int barSize) {
     loadData(fileName);
     this->verbose = verbose;
     this->barSize = barSize;
-    loadedData = make_shared<bool>(true);
-    doneTraining = make_shared<bool>(false);
-    curProgress = make_shared<double>(0);
-    progressGoal = make_shared<double>(0);
+    *loadedData = true;
 }
 
 //min-max data normalization method
@@ -192,6 +185,8 @@ void NeuralNetwork::trainWithValidation(vector<vector<double>> trainInput, vecto
     else {
         resetGradients();
     }
+    *timeDuration = 0.0;
+    curWatch->reset();
     std::thread thread_obj(&NeuralNetwork::_trainWithValidation, *this, trainInput, trainResults, valInput, valResults, minIterations, maxIterations);
     if (verbose) {
         std::thread thread_progress(&NeuralNetwork::progressBar, *this);
@@ -214,6 +209,7 @@ void NeuralNetwork::_trainWithValidation(vector<vector<double>> trainInput, vect
         //for every training data point
         for (unsigned int x = 0; x < trainInput.size(); x++) {
             *curProgress += 1;
+            curWatch->reset();
             //gets the actual result of the current data point
             auto desiredResult = trainResults[x];
             //gets predicted result from forward propagation
@@ -274,6 +270,10 @@ void NeuralNetwork::_trainWithValidation(vector<vector<double>> trainInput, vect
                     curN->prevBias = bResult + curN->prevBias * m;
                 }
             }
+            auto tempDuration = curWatch->elapsed_time() * (maxIterations * trainInput.size() - *curProgress);
+            if (fabs(tempDuration - *timeDuration) / *timeDuration >= 0.075) {
+                *timeDuration = tempDuration;
+            }
         }
         double valAccuracy = test(valInput, valResults);
         double trainAccuracy = test(trainInput, trainResults);
@@ -307,6 +307,8 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
         resetGradients();
     }
     if (this->verbose) cout << "SGD Progress:" << endl;
+    *timeDuration = 0.0;
+    curWatch->reset();
     std::thread thread_obj(&NeuralNetwork::_train, *this, input, allResults, iterations);
     if (verbose) {
         std::thread thread_progress(&NeuralNetwork::progressBar, *this);
@@ -324,6 +326,7 @@ void NeuralNetwork::_train(vector<vector<double>> input, vector<vector<double>> 
         //for every training data point
         for (unsigned int x = 0; x < input.size(); x++) {
             *curProgress += 1;
+            curWatch->reset();
             //gets the actual result of the current data point
             auto desiredResult = allResults[x];
             //gets predicted result from forward propagation
@@ -383,6 +386,10 @@ void NeuralNetwork::_train(vector<vector<double>> input, vector<vector<double>> 
                 }
             }
         }
+        auto tempDuration = curWatch->elapsed_time() * (iterations * input.size() - *curProgress);
+        if ((fabs(tempDuration - *timeDuration) / *timeDuration) >= 0.05) {
+            *timeDuration = tempDuration;
+        }
     }
     *doneTraining = true;
     *loadedData = true;
@@ -402,6 +409,8 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
         resetGradients();
     }
     if (this->verbose) cout << "Mini-Batch Progress:" << endl;
+    *timeDuration = 0.0;
+    curWatch->reset();
     std::thread thread_obj(&NeuralNetwork::_trainMiniBatch, *this, input, allResults, iterations, batchSize);
     if (verbose) {
         std::thread thread_progress(&NeuralNetwork::progressBar, *this);
@@ -449,6 +458,7 @@ void NeuralNetwork::_trainMiniBatch(vector<vector<double>> input, vector<vector<
                     layers[la][na]->delta = 0;
                 }
             }
+            curWatch->reset();
             //for every training data point
             for (unsigned int x = 0; x < batches[batchCount].size(); x++) {
                 *curProgress += 1;
@@ -511,6 +521,10 @@ void NeuralNetwork::_trainMiniBatch(vector<vector<double>> input, vector<vector<
                     curN->bias -= bResult + curN->prevBias * m;
                     curN->prevBias = bResult + curN->prevBias * m;
                 }
+            }
+            auto tempDuration = curWatch->elapsed_time() * (iterations * input.size() - *curProgress);
+            if (fabs(tempDuration - *timeDuration) / *timeDuration >= 0.075) {
+                *timeDuration = tempDuration;
             }
         }
     }
@@ -878,13 +892,13 @@ bool NeuralNetwork::saveData(string fileName) {
 void NeuralNetwork::progressBar() {
     int barWidth = this->barSize;
     while (!*doneTraining) {
-        printBar(*curProgress, *progressGoal, barWidth);
+        printBar(*curProgress, *progressGoal, barWidth, *timeDuration);
     }
-    printBar(1, 1, barWidth);
+    printBar(1, 1, barWidth, 0);
     cout << endl;
 }
 
-void NeuralNetwork::printBar(int curVal, int goal, int barWidth) {
+void NeuralNetwork::printBar(int curVal, int goal, int barWidth, double time) {
     double progress = double(curVal) / goal;
     cout << "\r[";
     int pos = barWidth * progress;
@@ -893,7 +907,7 @@ void NeuralNetwork::printBar(int curVal, int goal, int barWidth) {
         else if (i == pos) cout << ">";
         else cout << " ";
     }
-    cout << "] " << int(progress * 100.0) << " %";
+    cout << "] " << std::setw(3) << int(progress * 100.0) << "% | ETA:" << std::setw(3) << int(time / 60) << ":" << std::setfill('0') << std::setw(2) << int(time) % 60 << std::setfill(' ');
     cout.flush();
 }
 

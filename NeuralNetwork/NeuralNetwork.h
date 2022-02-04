@@ -11,8 +11,9 @@
 #include <cmath>
 #include <random>
 #include <algorithm>
-#include <chrono>
 #include <thread>
+#include "alg_stopwatch.h"
+#include <iomanip>
 
 using std::vector;
 using std::cout;
@@ -131,23 +132,25 @@ private:
     vector<double> sortVector(vector<double> vec);
     bool saveData(string fileName);
     void progressBar();
-    void printBar(int curVal, int goal, int barWidth);
+    void printBar(int curVal, int goal, int barWidth, double time);
     vector<double> rSquared(vector<vector<double>> predicted, vector<vector<double>> target);
 
     vector<vector<shared_ptr<Neuron>>> layers;
     vector<vector<double>> conversionRates;
     bool conversions = false;
-    shared_ptr<bool> loadedData;
     bool verbose = false;
-    shared_ptr<bool> doneTraining;
-    shared_ptr<double> progressGoal;
-    shared_ptr<double> curProgress;
+    shared_ptr<bool> loadedData = make_shared<bool>(false);
+    shared_ptr<bool> doneTraining = make_shared<bool>(false);
+    shared_ptr<double> progressGoal = make_shared<double>(0.0);
+    shared_ptr<double> curProgress = make_shared<double>(0.0);
+    shared_ptr<double> timeDuration = make_shared<double>(0.0);
     int barSize = 70;
     double learningRate;
     double momentum;
     double dropOutRate = 1.0;
     int earlyStopping = -1;
     double weightDecay = 0.0;
+    shared_ptr<StopWatch> curWatch = make_shared<StopWatch>(StopWatch());
     std::mt19937_64 rng;
 };
 
