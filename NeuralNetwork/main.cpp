@@ -287,7 +287,6 @@ void mnist_config() {
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with mini-batch supplemented by SGD..." << endl;
     net.trainMiniBatch(trainData, trainExpected, 50, 32);
-    //net.train(trainData, trainExpected, valData, valExpected, 1, 100);
     net.train(trainData, trainExpected, 10);
     //net.saveModel("mnist_train_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
@@ -316,7 +315,7 @@ void cancer_config() {
     //best with 200
     int maxIterations = 1000;
     int minIterations = 250;
-    int earlyStopping = 20;
+    int earlyStopping = 10;
     string fileName = "Breast_Cancer.csv";
     vector<vector<double>> data, expected;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -324,7 +323,7 @@ void cancer_config() {
     cout << endl << "Neural Network Prediction of Malignancy in Breast Tumors" << endl;
     cout << "********************************************************" << endl << endl;
     cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
-    NeuralNetwork net(neuronCounts, learningRate, momentum, false);
+    NeuralNetwork net(neuronCounts, learningRate, momentum, true);
     //net.setDropOut(dORate);
     net.setEarlyStopping(earlyStopping);
     SetConsoleTextAttribute(hConsole, 10);
@@ -477,7 +476,7 @@ void energy_config() {
     double learningRate = 0.001;
     double momentum = 0.0;
     double dropOutRate = 1.0;
-    int earlyStopping = 10;
+    int earlyStopping = 15;
     //number of layers excluding input layer
     vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
@@ -494,6 +493,7 @@ void energy_config() {
     cout << "Constructing Neural Network with " << neuronCounts.size() - 1 << " hidden layer(s), learning rate of " << learningRate << ", and momentum of " << momentum << "..." << endl;
     NeuralNetwork net(neuronCounts, learningRate, momentum);
     net.setDropOut(dropOutRate);
+    net.setVerbose(true);
     net.setEarlyStopping(earlyStopping);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Network construction successful!" << endl << endl;

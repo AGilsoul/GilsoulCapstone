@@ -12,8 +12,9 @@
 #include <random>
 #include <algorithm>
 #include <thread>
-#include "alg_stopwatch.h"
 #include <iomanip>
+#include "alg_stopwatch.h"
+#include <windows.h>
 
 using std::vector;
 using std::cout;
@@ -144,6 +145,7 @@ private:
     shared_ptr<double> progressGoal = make_shared<double>(0.0);
     shared_ptr<double> curProgress = make_shared<double>(0.0);
     shared_ptr<double> timeDuration = make_shared<double>(0.0);
+    shared_ptr<int> validationIters = make_shared<int>(0);
     int barSize = 70;
     double learningRate;
     double momentum;
