@@ -176,6 +176,7 @@ void NeuralNetwork::trainWithValidation(vector<vector<double>> trainInput, vecto
     *curProgress = 0;
     *progressGoal = 1;
     *doneTraining = false;
+    *validationIters = 0;
     //initialize input neuron weights
     if (!*loadedData) {
         for (unsigned int i = 0; i < layers[0].size(); i++) {
@@ -186,8 +187,6 @@ void NeuralNetwork::trainWithValidation(vector<vector<double>> trainInput, vecto
         resetGradients();
     }
     if (this->verbose) cout << "SGD Progress:" << endl;
-    *timeDuration = 0.0;
-    curWatch->reset();
     std::thread thread_obj(&NeuralNetwork::_trainWithValidation, *this, trainInput, trainResults, valInput, valResults, minIterations, maxIterations);
     if (verbose) {
         std::thread thread_progress(&NeuralNetwork::progressBar, *this);
@@ -208,7 +207,6 @@ void NeuralNetwork::_trainWithValidation(vector<vector<double>> trainInput, vect
         *validationIters += 1;
         //for every training data point
         for (unsigned int x = 0; x < trainInput.size(); x++) {
-            curWatch->reset();
             *curProgress += 1;
             //gets the actual result of the current data point
             auto desiredResult = trainResults[x];
@@ -270,10 +268,6 @@ void NeuralNetwork::_trainWithValidation(vector<vector<double>> trainInput, vect
                     curN->prevBias = bResult + curN->prevBias * m;
                 }
             }
-            auto tempDuration = curWatch->elapsed_time() * 60 * (*progressGoal - *curProgress);
-            if (fabs(tempDuration - *timeDuration) / *timeDuration >= 0.075) {
-                *timeDuration = tempDuration;
-            }
         }
         double valAccuracy = test(valInput, valResults);
         double trainAccuracy = test(trainInput, trainResults);
@@ -306,8 +300,6 @@ void NeuralNetwork::train(vector<vector<double>> input, vector<vector<double>> a
         resetGradients();
     }
     if (this->verbose) cout << "SGD Progress:" << endl;
-    *timeDuration = 0.0;
-    curWatch->reset();
     std::thread thread_obj(&NeuralNetwork::_train, *this, input, allResults, iterations);
     if (verbose) {
         std::thread thread_progress(&NeuralNetwork::progressBar, *this);
@@ -324,7 +316,6 @@ void NeuralNetwork::_train(vector<vector<double>> input, vector<vector<double>> 
     for (unsigned int z = 0; z < iterations; z++) {
         //for every training data point
         for (unsigned int x = 0; x < input.size(); x++) {
-            curWatch->reset();
             *curProgress += 1;
             //gets the actual result of the current data point
             auto desiredResult = allResults[x];
@@ -384,10 +375,6 @@ void NeuralNetwork::_train(vector<vector<double>> input, vector<vector<double>> 
                     curN->prevBias = bResult + curN->prevBias * m;
                 }
             }
-            auto tempDuration = curWatch->elapsed_time() * 60 * (*progressGoal - *curProgress);
-            if ((fabs(tempDuration - *timeDuration) / *timeDuration) >= 0.075) {
-                *timeDuration = tempDuration;
-            }
         }
     }
     *doneTraining = true;
@@ -408,7 +395,6 @@ void NeuralNetwork::trainMiniBatch(vector<vector<double>> input, vector<vector<d
         resetGradients();
     }
     if (this->verbose) cout << "Mini-Batch Progress:" << endl;
-    curWatch->reset();
     std::thread thread_obj(&NeuralNetwork::_trainMiniBatch, *this, input, allResults, iterations, batchSize);
     if (verbose) {
         std::thread thread_progress(&NeuralNetwork::progressBar, *this);
@@ -457,7 +443,6 @@ void NeuralNetwork::_trainMiniBatch(vector<vector<double>> input, vector<vector<
                     layers[la][na]->delta = 0;
                 }
             }
-            curWatch->reset();
             //for every training data point
             for (unsigned int x = 0; x < batches[batchCount].size(); x++) {
                 *curProgress += 1;
@@ -521,16 +506,160 @@ void NeuralNetwork::_trainMiniBatch(vector<vector<double>> input, vector<vector<
                     curN->prevBias = bResult + curN->prevBias * m;
                 }
             }
-            auto tempDuration = (curWatch->elapsed_time()) * (*progressGoal - *curProgress);
-            if (fabs(tempDuration - *timeDuration) / *timeDuration >= 0.075) {
-                *timeDuration = tempDuration;
-            }
-
         }
     }
     *doneTraining = true;
     *loadedData = true;
 }
+
+void NeuralNetwork::trainMiniBatchValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations, int batchSize) {
+    *curProgress = 0;
+    *progressGoal = 1;
+    *doneTraining = false;
+    *validationIters = 0;
+    // initialize input neuron weights
+    if (!*loadedData) {
+        for (unsigned int i = 0; i < layers[0].size(); i++) {
+            initializeWeights(trainInput[0].size(), layers[0][i], layers[1].size());
+        }
+    }
+    else {
+        resetGradients();
+    }
+    if (this->verbose) cout << "Mini-Batch Progress:" << endl;
+    std::thread thread_obj(&NeuralNetwork::_trainMiniBatchValidation, *this, trainInput, trainResults, valInput, valResults, minIterations, maxIterations, batchSize);
+    if (verbose) {
+        std::thread thread_progress(&NeuralNetwork::progressBar, *this);
+        thread_progress.join();
+    }
+    thread_obj.join();
+    cout << "Trained for " << *validationIters << " iterations" << endl;
+}
+
+void NeuralNetwork::_trainMiniBatchValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations, int batchSize) {
+    double lr = learningRate;
+    double m = momentum;
+    double prevAccuracy = 0.0;
+    int iterationsDecreased = 0;
+    *progressGoal = maxIterations * trainInput.size();
+    //for every iteration
+    for (unsigned int z = 0; z < maxIterations; z++) {
+        *validationIters += 1;
+        vector<vector<vector<double>>> batches;
+        vector<vector<vector<double>>> batchResults;
+
+        int numBatches = floor(trainInput.size() / batchSize);
+
+        vector<int> indexes;
+        indexes.reserve(trainInput.size());
+        for (int i = 0; i < trainInput.size(); ++i)
+            indexes.push_back(i);
+
+        std::random_shuffle(indexes.begin(), indexes.end());
+
+        //for every batch
+        for (unsigned int i = 0; i < numBatches; i++) {
+            vector<vector<double>> curBatch;
+            vector<vector<double>> curResults;
+            for (unsigned int x = i * batchSize; x < (i * batchSize) + batchSize; x++) {
+                curBatch.push_back(trainInput[indexes[x]]);
+                curResults.push_back(trainResults[indexes[x]]);
+            }
+            batches.push_back(curBatch);
+            batchResults.push_back(curResults);
+        }
+
+
+        //for every batch
+        int timeDurations = 0;
+        for (unsigned int batchCount = 0; batchCount < batches.size(); batchCount++) {
+            //reset neuron deltas
+            for (int la = 0; la < layers.size(); la++) {
+                for (int na = 0; na < layers[la].size(); na++) {
+                    layers[la][na]->delta = 0;
+                }
+            }
+            //for every training data point
+            for (unsigned int x = 0; x < batches[batchCount].size(); x++) {
+                *curProgress += 1;
+                //gets the actual result of the current data point
+                auto desiredResult = batchResults[batchCount][x];
+                //gets predicted result from forward propagation
+                vector<double> finalResult = forwardProp(batches[batchCount][x], this->dropOutRate);
+                //sets up the nextDelta variables for the hidden layers
+                vector<double> nextDeltas;
+                //output layer back propagation
+                if (layers[layers.size()-1].size() == 1) {
+                    for (unsigned int neuronCount = 0; neuronCount < layers[layers.size() - 1].size();neuronCount++) {
+                        //current neuron
+                        auto curN = layers[layers.size()- 1][neuronCount];
+                        //gets the derivative of the neuron with respect to the expected output
+                        curN->delta += finalLinearGradient(curN, desiredResult[neuronCount]);
+
+                        //adds the delta to the nextDeltas vector
+                        nextDeltas.push_back(curN->delta);
+                    }
+                }
+                else {
+                    nextDeltas = finalSoftmaxGradient(desiredResult);
+                    for (int i = 0; i < layers[layers.size()-1].size(); i++) {
+                        auto curN = layers[layers.size()- 1][i];
+                        curN->delta += nextDeltas[i];
+                    }
+                }
+
+                //hidden layer backprop for every hidden layer
+                for (int layerCount = layers.size() - 2; layerCount >= 0; layerCount--) {
+                    //tempDeltas vector, will be the nextDeltas vector for the previous layer
+                    vector<double> tempDeltas;
+                    //for every neuron in the hidden layer
+                    for (unsigned int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
+                        //current neuron
+                        auto curN = layers[layerCount][neuronCount];
+                        //gets the derivative of the neuron with respect to the next layer neurons
+                        curN->delta += hiddenGradient(curN, neuronCount, layers[layerCount + 1], nextDeltas);
+                        tempDeltas.push_back(curN->delta);
+                    }
+                    nextDeltas = tempDeltas;
+                }
+            }
+            //updating weights in every layer
+            for (int layerCount = layers.size() - 1; layerCount >= 0; layerCount--) {
+                //for every neuron in the layer
+                for (unsigned int neuronCount = 0; neuronCount < layers[layerCount].size(); neuronCount++) {
+                    auto curN = layers[layerCount][neuronCount];
+                    curN->delta /= batches[batchCount].size();
+                    //updates every weight and previous gradient for the current neuron
+                    for (int w = 0; w < curN->weights.size(); w++) {
+                        //gets the derivative of weight adjust with the delta of the current neuron and the inputs
+                        double result = weightDerivative(curN->weights[w], curN->delta, curN->prevInputs[w]) * lr;
+                        curN->weights[w] -= (result + curN->prevGradients[w] * m);
+                        curN->prevGradients[w] = (result + curN->prevGradients[w] * m);
+                    }
+                    //updates bias and previous bias for the current neuron
+                    double bResult = curN->delta * lr;
+                    curN->bias -= bResult + curN->prevBias * m;
+                    curN->prevBias = bResult + curN->prevBias * m;
+                }
+            }
+        }
+        double valAccuracy = test(valInput, valResults);
+        double trainAccuracy = test(trainInput, trainResults);
+        if (valAccuracy < prevAccuracy and z >= minIterations) {
+            iterationsDecreased++;
+        }
+        else {
+            iterationsDecreased = 0;
+            prevAccuracy = valAccuracy;
+        }
+        if (iterationsDecreased >= this->earlyStopping) {
+            break;
+        }
+    }
+    *doneTraining = true;
+    *loadedData = true;
+}
+
 
 //forward propagation method
 vector<double> NeuralNetwork::forwardProp(vector<double> input, double chanceDropout) {
@@ -896,16 +1025,19 @@ void NeuralNetwork::progressBar() {
     GetConsoleCursorInfo(out, &cursorInfo);
     cursorInfo.bVisible = false;
     SetConsoleCursorInfo(out, &cursorInfo);
+    StopWatch progressWatch;
+    progressWatch.reset();
+    int startTime = progressWatch.elapsed_time();
     while (!*doneTraining) {
-        printBar(*curProgress, *progressGoal, barWidth, *timeDuration);
+        printBar(*curProgress, *progressGoal, barWidth, progressWatch, startTime);
     }
-    printBar(1, 1, barWidth, 0);
+    printBar(1, 1, barWidth, progressWatch, startTime);
     cout << endl;
     cursorInfo.bVisible = true;
     SetConsoleCursorInfo(out, &cursorInfo);
 }
 
-void NeuralNetwork::printBar(int curVal, int goal, int barWidth, double time) {
+void NeuralNetwork::printBar(int curVal, int goal, int barWidth, StopWatch watch, int startTime) {
     double progress = double(curVal) / goal;
     cout << "\r[";
     int pos = barWidth * progress;
@@ -914,7 +1046,7 @@ void NeuralNetwork::printBar(int curVal, int goal, int barWidth, double time) {
         else if (i == pos) cout << ">";
         else cout << " ";
     }
-    cout << "] " << std::setw(3) << int(progress * 100.0) << "% | ETA:" << std::setw(3) << int(time / 60) << ":" << std::setfill('0') << std::setw(2) << std::fixed << int(time) % 60 << std::setfill(' ');
+    cout << "] " << std::setw(3) << int(progress * 100.0) << "% " << loading[int(watch.elapsed_time()) % 4];
     cout.flush();
 }
 

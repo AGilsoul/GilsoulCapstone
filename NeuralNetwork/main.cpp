@@ -16,7 +16,7 @@ using std::ios;
 using std::ifstream;
 using namespace std::chrono;
 
-
+void performanceTesting(vector<vector<double>> inputData, vector<vector<double>> inputExpected, int iterations);
 void test_cancer_config();
 void test_mnist_config();
 void cancer_config();
@@ -32,6 +32,8 @@ void energyFile(vector<vector<double>>& testData, vector<vector<double>>& expect
 void synchronousMachineFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
 void gammaFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
 void pulsarFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
+vector<int> oneHotEncode(int value, int numCategories);
+void readRegressionQuantitativeFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName, int numColumns, int targetColumn);
 
 
 int main() {
@@ -46,7 +48,7 @@ int main() {
     //cancer_config();
 
     //configuration that trains and tests a neural network on handwritten digits
-    mnist_config();
+    //mnist_config();
 
     //configuration that loads pre-trained neural network for digit recognition, and retrains with mini-batch gradient descent
     //test_mnist_config();
@@ -62,9 +64,107 @@ int main() {
 
     //classification config that predicts whether signals are pulsars or not
     //pulsar_config();
+
+
+    vector<vector<double>> data, expected;
+    string fileName = "mnist_train.csv";
+    readMnistFile(data, expected);
+    //readRegressionQuantitativeFile(data, expected, fileName, 755, 0);
+    //string fileName = "Breast_Cancer.csv";
+    //readCancerFile(data, expected, fileName);
+    performanceTesting(data, expected, 3);
+
+
     cout << "Press x to continue" << endl;
     cin >> placeHolder;
     return 0;
+}
+
+void performanceTesting(vector<vector<double>> inputData, vector<vector<double>> inputExpected, int iterations) {
+    cout << endl << "NEURAL NETWORK PERFORMANCE TEST AND COMPARISON" << endl;
+    cout << "********************************************************" << endl << endl;
+    double avgAccuracies[3] = {0.0, 0.0, 0.0};
+    double avgTimes[3] = {0, 0, 0};
+    double learningRate = 0.001;
+    double momentum = 0.9;
+    double dropOutRate = 0.8;
+    double wd = 0.01;
+    vector<double> splitRatios = {0.6, 0.2, 0.2};
+    //neuron counts for hidden and output layers
+    vector<int> neuronCounts = {32, 10};
+    //best with 200
+    int earlyStopping = 5;
+    StopWatch myWatch;
+    for (int mCount = 0; mCount < 3; mCount++) {
+        for (int i = 0; i < iterations; i++) {
+            HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+            SetConsoleTextAttribute(hConsole, 15);
+            NeuralNetwork net(neuronCounts, learningRate);
+            net.setMomentum(momentum);
+            //net.setEarlyStopping(earlyStopping);
+            net.setVerbose(true);
+            //net.setWeightDecay(wd);
+            net.setDropOut(dropOutRate);
+            SetConsoleTextAttribute(hConsole, 10);
+            SetConsoleTextAttribute(hConsole, 15);
+            vector<vector<double>> data = inputData;
+            vector<vector<double>> expected = inputExpected;
+            net.normalize(data, {0, 255});
+            //net.normalize(data);
+
+            vector<int> indexes;
+            indexes.reserve(data.size());
+            for (int i = 0; i < data.size(); ++i)
+                indexes.push_back(i);
+
+            std::random_shuffle(indexes.begin(), indexes.end());
+            vector<vector<double>> newData;
+            vector<vector<double>> newExpect;
+            for (unsigned int i = 0; i < data.size(); i++) {
+                newData.push_back(data[indexes[i]]);
+                newExpect.push_back(expected[indexes[i]]);
+            }
+            data = newData;
+            expected = newExpect;
+
+            auto allData = net.trainValTestSplit(data, splitRatios);
+            auto allLabels = net.trainValTestSplit(expected, splitRatios);
+            auto trainData = allData[0];
+            auto trainExpected = allLabels[0];
+            auto valData = allData[1];
+            auto valExpected = allLabels[1];
+            auto testData = allData[2];
+            auto testExpected = allLabels[2];
+
+            SetConsoleTextAttribute(hConsole, 15);
+            cout << "Training model " << mCount + 1 << " | Iteration " << i + 1 << endl;
+            if (mCount == 0) {
+                myWatch.reset();
+                net.trainMiniBatch(trainData, trainExpected, 50, 32);
+                avgTimes[mCount] += myWatch.elapsed_time();
+            }
+            else if (mCount == 1) {
+                myWatch.reset();
+                net.train(trainData, trainExpected, 20);
+                avgTimes[mCount] += myWatch.elapsed_time();
+            }
+            else if (mCount == 2) {
+                myWatch.reset();
+                net.trainMiniBatch(trainData, trainExpected, 50, 32);
+                net.train(trainData, trainExpected, 10);
+                avgTimes[mCount] += myWatch.elapsed_time();
+            }
+            double testResult = net.test(testData, testExpected);
+            avgAccuracies[mCount] += testResult;
+            SetConsoleTextAttribute(hConsole, 15);
+            cout << "Model " << mCount + 1 << " iteration " << i + 1 << " accuracy: " << testResult << "%" << endl;
+            cout << endl;
+        }
+    }
+    for (int i = 0; i < 3; i++) {
+        cout << "Model " << i + 1 << " avg accuracy: " << avgAccuracies[i]/iterations << "% | avg time: " << avgTimes[i]/iterations << endl;
+    }
+    cout << endl;
 }
 
 void test_cancer_config() {
@@ -247,6 +347,7 @@ void mnist_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Reading data from mnist_train.csv..." << endl;
+    //readRegressionQuantitativeFile(data, expected, "mnist_train.csv", 785, 0);
     readMnistFile(data, expected);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data collected!" << endl << endl;
@@ -287,7 +388,7 @@ void mnist_config() {
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Training with mini-batch supplemented by SGD..." << endl;
     net.trainMiniBatch(trainData, trainExpected, 50, 32);
-    net.train(trainData, trainExpected, 10);
+    net.train(trainData, trainExpected, 20);
     //net.saveModel("mnist_train_config.csv");
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
@@ -1055,4 +1156,39 @@ void pulsarFile(vector<vector<double>>& testData, vector<vector<double>>& expect
         expected.push_back(result);
     }
     fin.close();
+}
+
+void readRegressionQuantitativeFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName, int numColumns, int targetColumn) {
+    //strings to be used for reference and assignment of values when reading the file and assigning to the string list sList
+    string pHolder = "";
+    ifstream fin(fileName, ios::in);
+    while (!fin.eof()) {
+        vector<double> dData;
+        vector<double> result;
+        for (int i = 0; i < numColumns; i++) {
+            if (i != numColumns - 1) {
+                getline(fin, pHolder, ',');
+            }
+            else {
+                getline(fin, pHolder, '\n');
+            }
+
+            if (i == targetColumn) {
+                result = {stod(pHolder)};
+            }
+            else {
+                dData.push_back(stod(pHolder));
+            }
+        }
+        testData.push_back(dData);
+        expected.push_back(result);
+    }
+    NeuralNetwork::printVector(testData[0]);
+    fin.close();
+}
+
+vector<int> oneHotEncode(int value, int numCategories) {
+    vector<int> encoded(numCategories, 0);
+    encoded[value] = 1;
+    return encoded;
 }

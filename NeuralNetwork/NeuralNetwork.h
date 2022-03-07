@@ -76,7 +76,7 @@ public:
     void trainWithValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations);
     void train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations);
     void trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize);
-    vector<double> forwardProp(vector<double> input, double chanceDropout);
+    void trainMiniBatchValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations, int batchSize);    vector<double> forwardProp(vector<double> input, double chanceDropout);
     static void printVector(vector<double> input);
     vector<vector<double>> vectorSplit(vector<vector<double>> vec, int start, int fin);
     vector<vector<vector<double>>> trainValTestSplit(vector<vector<double>> vec, vector<double> splitRatios);
@@ -119,6 +119,7 @@ private:
     void _trainWithValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations);
     void _train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations);
     void _trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize);
+    void _trainMiniBatchValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations, int batchSize);
     vector<double> predictTest(vector<double> unknownP);
     vector<double> softmax();
     vector<double> softmaxDeriv();
@@ -133,7 +134,7 @@ private:
     vector<double> sortVector(vector<double> vec);
     bool saveData(string fileName);
     void progressBar();
-    void printBar(int curVal, int goal, int barWidth, double time);
+    void printBar(int curVal, int goal, int barWidth, StopWatch watch, int startTime);
     vector<double> rSquared(vector<vector<double>> predicted, vector<vector<double>> target);
 
     vector<vector<shared_ptr<Neuron>>> layers;
@@ -144,7 +145,6 @@ private:
     shared_ptr<bool> doneTraining = make_shared<bool>(false);
     shared_ptr<double> progressGoal = make_shared<double>(0.0);
     shared_ptr<double> curProgress = make_shared<double>(0.0);
-    shared_ptr<double> timeDuration = make_shared<double>(0.0);
     shared_ptr<int> validationIters = make_shared<int>(0);
     int barSize = 70;
     double learningRate;
@@ -152,7 +152,7 @@ private:
     double dropOutRate = 1.0;
     int earlyStopping = -1;
     double weightDecay = 0.0;
-    shared_ptr<StopWatch> curWatch = make_shared<StopWatch>(StopWatch());
     std::mt19937_64 rng;
+    string loading[4] = {" | ", " / ", " - ", " \\ "};
 };
 
