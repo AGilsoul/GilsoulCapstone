@@ -77,9 +77,9 @@ void NeuralNetwork::normalize(vector<vector<double>>& input, vector<double> minM
                 for (auto &i: input) {
                     curData.push_back(i[p]);
                 }
-                auto sortedData = sortVector(curData);
-                double min = sortedData[0];
-                double max = sortedData[sortedData.size() - 1];
+                auto limits = vectorMinMax(curData);
+                double min = limits[0];
+                double max = limits[1];
                 for (auto &i: input) {
                     i[p] = (i[p] - min) / (max - min);
                     if (std::isnan(i[p])) {
@@ -961,22 +961,14 @@ double NeuralNetwork::weightDerivative(double weight, double neuronDelta, double
 }
 
 //sorts a vector of doubles
-vector<double> NeuralNetwork::sortVector(vector<double> vec) {
-    vector<double> sortedData;
-    sortedData.push_back(vec[0]);
-    for (unsigned int x = 1; x < vec.size(); x++) {
-        for (unsigned int y = 0; y < sortedData.size(); y++) {
-            if (vec[x] < sortedData[y]) {
-                sortedData.insert(sortedData.begin() + y, vec[x]);
-                break;
-            }
-            else if (y == sortedData.size() - 1) {
-                sortedData.push_back(vec[x]);
-                break;
-            }
-        }
+vector<double> NeuralNetwork::vectorMinMax(vector<double> vec) {
+    double min = MAXLONG;
+    double max = MINLONG;
+    for (unsigned int i = 0; i < vec.size(); i++) {
+        if (vec[i] < min) min = vec[i];
+        else if (vec[i] > max) max = vec[i];
     }
-    return sortedData;
+    return {min, max};
 }
 
 //saves weight data to csv file called "nn_save_config.csv"
