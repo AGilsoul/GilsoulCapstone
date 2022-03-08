@@ -140,21 +140,21 @@ void performanceTesting(vector<vector<double>> inputData, vector<vector<double>>
             cout << "Training model " << mCount + 1 << " | Iteration " << i + 1 << endl;
             if (mCount == 0) {
                 myWatch.reset();
-                net.setLR(learningRate * 32);
+                //net.setLR(learningRate * 32);
                 net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 15, 50, 32);
                 avgTimes[mCount] += myWatch.elapsed_time();
             }
             else if (mCount == 1) {
                 myWatch.reset();
-                net.setLR(learningRate);
+                //net.setLR(learningRate);
                 net.trainWithValidation(trainData, trainExpected, valData, valExpected, 10, 50);
                 avgTimes[mCount] += myWatch.elapsed_time();
             }
             else if (mCount == 2) {
                 myWatch.reset();
-                net.setLR(learningRate * 32);
+                //net.setLR(learningRate * 32);
                 net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 15, 50, 32);
-                net.setLR(learningRate);
+                //net.setLR(learningRate);
                 net.trainWithValidation(trainData, trainExpected, valData, valExpected, 10, 50);
                 avgTimes[mCount] += myWatch.elapsed_time();
             }
