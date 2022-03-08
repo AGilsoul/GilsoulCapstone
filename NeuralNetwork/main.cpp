@@ -91,7 +91,7 @@ void performanceTesting(vector<vector<double>> inputData, vector<vector<double>>
     double wd = 0.01;
     vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {64, 32, 10};
+    vector<int> neuronCounts = {100, 10};
     //best with 200
     int earlyStopping = 5;
     StopWatch myWatch;
@@ -140,18 +140,22 @@ void performanceTesting(vector<vector<double>> inputData, vector<vector<double>>
             cout << "Training model " << mCount + 1 << " | Iteration " << i + 1 << endl;
             if (mCount == 0) {
                 myWatch.reset();
-                net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 10, 50, 32);
+                net.setLR(learningRate * 32);
+                net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 15, 50, 32);
                 avgTimes[mCount] += myWatch.elapsed_time();
             }
             else if (mCount == 1) {
                 myWatch.reset();
+                net.setLR(learningRate);
                 net.trainWithValidation(trainData, trainExpected, valData, valExpected, 10, 50);
                 avgTimes[mCount] += myWatch.elapsed_time();
             }
             else if (mCount == 2) {
                 myWatch.reset();
+                net.setLR(learningRate * 32);
+                net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 15, 50, 32);
+                net.setLR(learningRate);
                 net.trainWithValidation(trainData, trainExpected, valData, valExpected, 10, 50);
-                net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 10, 50, 32);
                 avgTimes[mCount] += myWatch.elapsed_time();
             }
             double testResult = net.test(testData, testExpected);
