@@ -962,11 +962,11 @@ double NeuralNetwork::weightDerivative(double weight, double neuronDelta, double
 
 //sorts a vector of doubles
 vector<double> NeuralNetwork::vectorMinMax(vector<double> vec) {
-    double min = MAXLONG;
-    double max = MINLONG;
+    double min;
+    double max;
     for (unsigned int i = 0; i < vec.size(); i++) {
-        if (vec[i] < min) min = vec[i];
-        else if (vec[i] > max) max = vec[i];
+        if (vec[i] < min || !min) min = vec[i];
+        else if (vec[i] > max || !max) max = vec[i];
     }
     return {min, max};
 }
