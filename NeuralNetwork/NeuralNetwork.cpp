@@ -258,7 +258,7 @@ void NeuralNetwork::_trainWithValidation(vector<vector<double>> trainInput, vect
                     //updates every weight and previous gradient for the current neuron
                     for (int w = 0; w < curN->weights.size(); w++) {
                         //gets the derivative of weight adjust with the delta of the current neuron and the inputs
-                        double result = weightDerivative(curN->weights[w], curN->delta, curN->prevInputs[w]) * lr;
+                        double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
                         curN->weights[w] -= result + curN->prevGradients[w] * m;
                         curN->prevGradients[w] = result + curN->prevGradients[w] * m;
                     }
@@ -365,7 +365,7 @@ void NeuralNetwork::_train(vector<vector<double>> input, vector<vector<double>> 
                     //updates every weight and previous gradient for the current neuron
                     for (int w = 0; w < curN->weights.size(); w++) {
                         //gets the derivative of weight adjust with the delta of the current neuron and the inputs
-                        double result = weightDerivative(curN->weights[w], curN->delta, curN->prevInputs[w]) * lr;
+                        double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
                         curN->weights[w] -= result + curN->prevGradients[w] * m;
                         curN->prevGradients[w] = result + curN->prevGradients[w] * m;
                     }
@@ -496,7 +496,7 @@ void NeuralNetwork::_trainMiniBatch(vector<vector<double>> input, vector<vector<
                     //updates every weight and previous gradient for the current neuron
                     for (int w = 0; w < curN->weights.size(); w++) {
                         //gets the derivative of weight adjust with the delta of the current neuron and the inputs
-                        double result = weightDerivative(curN->weights[w], curN->delta, curN->prevInputs[w]) * lr;
+                        double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
                         curN->weights[w] -= (result + curN->prevGradients[w] * m);
                         curN->prevGradients[w] = (result + curN->prevGradients[w] * m);
                     }
@@ -632,7 +632,7 @@ void NeuralNetwork::_trainMiniBatchValidation(vector<vector<double>> trainInput,
                     //updates every weight and previous gradient for the current neuron
                     for (int w = 0; w < curN->weights.size(); w++) {
                         //gets the derivative of weight adjust with the delta of the current neuron and the inputs
-                        double result = weightDerivative(curN->weights[w], curN->delta, curN->prevInputs[w]) * lr;
+                        double result = weightDerivative(curN->delta, curN->prevInputs[w]) * lr;
                         curN->weights[w] -= (result + curN->prevGradients[w] * m);
                         curN->prevGradients[w] = (result + curN->prevGradients[w] * m);
                     }
@@ -956,8 +956,8 @@ double NeuralNetwork::hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector
 }
 
 //Gets the derivative to be applied to weights
-double NeuralNetwork::weightDerivative(double weight, double neuronDelta, double input) const {
-    return neuronDelta * input + (2 * this->weightDecay * weight);
+double NeuralNetwork::weightDerivative(double neuronDelta, double input) const {
+    return neuronDelta * input;
 }
 
 //sorts a vector of doubles

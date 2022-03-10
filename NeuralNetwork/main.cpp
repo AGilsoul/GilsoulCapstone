@@ -72,7 +72,7 @@ int main() {
     //readRegressionQuantitativeFile(data, expected, fileName, 755, 0);
     //string fileName = "Breast_Cancer.csv";
     //readCancerFile(data, expected, fileName);
-    performanceTesting(data, expected, 3);
+    performanceTesting(data, expected, 1);
 
 
     cout << "Press x to continue" << endl;
@@ -81,30 +81,28 @@ int main() {
 }
 
 void performanceTesting(vector<vector<double>> inputData, vector<vector<double>> inputExpected, int iterations) {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     cout << endl << "NEURAL NETWORK PERFORMANCE TEST AND COMPARISON" << endl;
     cout << "********************************************************" << endl << endl;
-    double avgAccuracies[4] = {0, 0, 0, 0};
-    double avgTimes[4] = {0, 0, 0, 0};
+    double avgAccuracies[4] = {0, 0, 0};
+    double avgTimes[4] = {0, 0, 0};
     double learningRate = 0.001;
     double momentum = 0.9;
     double dropOutRate = 0.8;
-    double wd = 0.01;
-    vector<double> splitRatios = {0.6, 0.2, 0.2};
+    vector<double> splitRatios = {0.5, 0.2, 0.3};
     //neuron counts for hidden and output layers
     vector<int> neuronCounts = {32, 10};
     //best with 200
-    int earlyStopping = 10;
+    int earlyStopping = 5;
     StopWatch myWatch;
-    for (int mCount = 0; mCount < 4; mCount++) {
+    for (int mCount = 0; mCount < 3; mCount++) {
         for (int i = 0; i < iterations; i++) {
-            HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
             SetConsoleTextAttribute(hConsole, 15);
             NeuralNetwork net(neuronCounts, learningRate);
             net.setMomentum(momentum);
             net.setEarlyStopping(earlyStopping);
             net.setVerbose(true);
-            //net.setWeightDecay(wd);
-            //net.setDropOut(dropOutRate);
+            net.setDropOut(dropOutRate);
             SetConsoleTextAttribute(hConsole, 10);
             SetConsoleTextAttribute(hConsole, 15);
             vector<vector<double>> data = inputData;
@@ -138,26 +136,20 @@ void performanceTesting(vector<vector<double>> inputData, vector<vector<double>>
 
             SetConsoleTextAttribute(hConsole, 15);
             cout << "Training model " << mCount + 1 << " | Iteration " << i + 1 << endl;
-            if (mCount == 0) {
+            if (mCount == 2) {
                 myWatch.reset();
-                net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 20, 100, 32);
+                net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 20, 50, 64);
                 avgTimes[mCount] += myWatch.elapsed_time();
             }
             else if (mCount == 1) {
                 myWatch.reset();
-                net.trainWithValidation(trainData, trainExpected, valData, valExpected, 20, 100);
+                net.trainWithValidation(trainData, trainExpected, valData, valExpected, 20, 50);
                 avgTimes[mCount] += myWatch.elapsed_time();
             }
-            else if (mCount == 2) {
+            else if (mCount == 0) {
                 myWatch.reset();
-                net.trainWithValidation(trainData, trainExpected, valData, valExpected, 20, 50);
-                net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 20, 50, 32);
-                avgTimes[mCount] += myWatch.elapsed_time();
-            }
-            else if (mCount == 3) {
-                myWatch.reset();
-                net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 20, 50, 32);
-                net.trainWithValidation(trainData, trainExpected, valData, valExpected, 20, 50);
+                net.trainWithValidation(trainData, trainExpected, valData, valExpected, 10, 25);
+                net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 10, 25, 64);
                 avgTimes[mCount] += myWatch.elapsed_time();
             }
             double testResult = net.test(testData, testExpected);

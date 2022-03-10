@@ -95,9 +95,6 @@ public:
     void setEarlyStopping(int numStop) {
         this->earlyStopping = numStop;
     }
-    void setWeightDecay(double wd) {
-        this->weightDecay = wd;
-    }
     void setVerbose(bool verbose) {
         this->verbose = verbose;
     }
@@ -130,7 +127,7 @@ private:
     vector<double> finalSoftmaxGradient(vector<double> targets);
     double finalLinearGradient(shared_ptr<Neuron> curN, double expected) const;
     double hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector<shared_ptr<Neuron>> nextLayer, vector<double> nextDeltas) const;
-    double weightDerivative(double weight, double neuronDelta, double input) const;
+    double weightDerivative(double neuronDelta, double input) const;
     vector<double> vectorMinMax(vector<double> vec);
     bool saveData(string fileName);
     void progressBar();
@@ -151,7 +148,6 @@ private:
     double momentum;
     double dropOutRate = 1.0;
     int earlyStopping = -1;
-    double weightDecay = 0.0;
     std::mt19937_64 rng;
     string loading[4] = {" | ", " / ", " - ", " \\ "};
 };
