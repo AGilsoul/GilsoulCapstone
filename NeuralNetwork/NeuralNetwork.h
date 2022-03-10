@@ -48,6 +48,7 @@ public:
         double calculate(vector<double> input);
     };
 
+
     /***
      * Constructor for a new neural network
      * @param neurons vector containing the number of neurons for each hidden layer and the output layer
@@ -119,7 +120,6 @@ private:
     void _trainMiniBatchValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations, int batchSize);
     vector<double> predictTest(vector<double> unknownP);
     vector<double> softmax();
-    vector<double> softmaxDeriv();
     double relu(double input) const;
     double reluDeriv(double input) const;
     void initializeWeights(int numWeights, shared_ptr<Neuron> newN, double numOut);
@@ -135,20 +135,20 @@ private:
     vector<double> rSquared(vector<vector<double>> predicted, vector<vector<double>> target);
 
     vector<vector<shared_ptr<Neuron>>> layers;
+    std::mt19937_64 rng;
+    string loading[4] = {" | ", " / ", " - ", " \\ "};
     vector<vector<double>> conversionRates;
-    bool conversions = false;
-    bool verbose = false;
-    shared_ptr<bool> loadedData = make_shared<bool>(false);
-    shared_ptr<bool> doneTraining = make_shared<bool>(false);
     shared_ptr<double> progressGoal = make_shared<double>(0.0);
     shared_ptr<double> curProgress = make_shared<double>(0.0);
-    shared_ptr<int> validationIters = make_shared<int>(0);
-    int barSize = 70;
     double learningRate;
     double momentum;
     double dropOutRate = 1.0;
+    shared_ptr<bool> loadedData = make_shared<bool>(false);
+    shared_ptr<bool> doneTraining = make_shared<bool>(false);
+    bool conversions = false;
+    bool verbose = false;
+    shared_ptr<int> validationIters = make_shared<int>(0);
     int earlyStopping = -1;
-    std::mt19937_64 rng;
-    string loading[4] = {" | ", " / ", " - ", " \\ "};
+    int barSize = 70;
 };
 

@@ -660,7 +660,6 @@ void NeuralNetwork::_trainMiniBatchValidation(vector<vector<double>> trainInput,
     *loadedData = true;
 }
 
-
 //forward propagation method
 vector<double> NeuralNetwork::forwardProp(vector<double> input, double chanceDropout) {
     auto data = input;
@@ -862,22 +861,6 @@ vector<double> NeuralNetwork::softmax() {
     return results;
 }
 
-//maybe not needed
-vector<double> NeuralNetwork::softmaxDeriv() {
-    auto outputLayer = layers[layers.size()-1];
-    double denominator = 0;
-    for (int i = 0; i < outputLayer.size(); i++) {
-        auto curN = outputLayer[i];
-        denominator += exp(curN->output);
-    }
-    vector<double> gradients;
-    for (int i = 0; i < outputLayer.size(); i++) {
-        auto curN = outputLayer[i];
-        gradients.push_back((exp(curN->output) * denominator - pow(exp(curN->output), 2)) / pow(denominator, 2));
-    }
-    return gradients;
-}
-
 //ReLu activation function
 double NeuralNetwork::relu(double input) const {
     if (input > 0) {
@@ -915,6 +898,7 @@ void NeuralNetwork::initializeWeights(int numWeights, shared_ptr<Neuron> newN, d
     newN->delta = 0;
 }
 
+//resets all gradients
 void NeuralNetwork::resetGradients() {
     for (int l = 0; l < layers.size(); l++) {
         for (int n = 0; n < layers[l].size(); n++) {
@@ -926,7 +910,7 @@ void NeuralNetwork::resetGradients() {
     }
 }
 
-//gradient descent method for final layer
+//gets gradient of final softmax gradient
 vector<double> NeuralNetwork:: finalSoftmaxGradient(vector<double> target) {
     vector<double> resultingGradients;
     auto outputLayer = layers[layers.size()-1];
@@ -941,11 +925,12 @@ vector<double> NeuralNetwork:: finalSoftmaxGradient(vector<double> target) {
     return resultingGradients;
 }
 
+//gets gradient of final regression layer
 double NeuralNetwork::finalLinearGradient(shared_ptr<Neuron> curN, double expected) const {
     return 2 * (curN->output - expected);
 }
 
-//gradient descent method for hidden layers
+//gets gradient in hidden layers
 double NeuralNetwork::hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector<shared_ptr<Neuron>> nextLayer, vector<double> nextDeltas) const {
     double total = 0;
     for (unsigned int i = 0; i < nextLayer.size(); i++) {
@@ -955,12 +940,12 @@ double NeuralNetwork::hiddenGradient(shared_ptr<Neuron> curN, int nIndex, vector
     return reluDeriv(curN->output) * total;
 }
 
-//Gets the derivative to be applied to weights
+//gets the derivative to be applied to weights
 double NeuralNetwork::weightDerivative(double neuronDelta, double input) const {
     return neuronDelta * input;
 }
 
-//sorts a vector of doubles
+//finds the min and max value of a vector
 vector<double> NeuralNetwork::vectorMinMax(vector<double> vec) {
     double min;
     double max;
@@ -1029,6 +1014,7 @@ void NeuralNetwork::progressBar() {
     SetConsoleCursorInfo(out, &cursorInfo);
 }
 
+//helper for progressBar method
 void NeuralNetwork::printBar(int curVal, int goal, int barWidth, StopWatch watch, int startTime) {
     double progress = double(curVal) / goal;
     cout << "\r[";
@@ -1042,6 +1028,7 @@ void NeuralNetwork::printBar(int curVal, int goal, int barWidth, StopWatch watch
     cout.flush();
 }
 
+//calculates r-squared values for regression
 vector<double> NeuralNetwork::rSquared(vector<vector<double>> predicted, vector<vector<double>> target) {
     vector<double> residualVals;
     for (int i = 0; i < predicted.size(); i++) {
