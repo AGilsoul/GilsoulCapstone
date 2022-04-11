@@ -36,15 +36,25 @@ public:
      * Calculates output using output from previous layer as input
      */
     struct Neuron {
+        // Default constructor, sets the bias to 0
         Neuron(): bias(0) {}
+        // vector storing neuron weights
         vector<double> weights;
+        // bias value for the neuron
         double bias;
+        // vector storing the previous inputs to the neuron
         vector<double> prevInputs;
+        // vector storing the previous gradients applied to the neuron
         vector<double> prevGradients;
+        // previous bias value for the neuron
         double prevBias;
+        // stores the output of the neuron
         double output;
+        // stores the output of the neuron after the activation function is applied
         double activatedOutput;
+        // stores the delta value of the neuron
         double delta;
+        // output calculation function
         double calculate(vector<double> input);
     };
 
@@ -74,6 +84,7 @@ public:
      */
     void normalize(vector<vector<double>>& input, vector<double> minMaxRange = {});
     void loadData(string fileName);
+    void perTest(vector<vector<double>> input, vector<vector<double>> allResults, vector<vector<double>> testIn, vector<vector<double>> testResults, int iterations, string fOut);
     void trainWithValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations);
     void train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations);
     void trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize);
@@ -114,6 +125,8 @@ public:
 
 private:
 
+    bool writeResults(string fileName, vector<double> primKey, vector<double> results, vector<double> runtime);
+    void _perTest(vector<vector<double>> input, vector<vector<double>> allResults, vector<vector<double>> testIn, vector<vector<double>> testResults, int iterations, string fOut);
     void _trainWithValidation(vector<vector<double>> trainInput, vector<vector<double>> trainResults, vector<vector<double>> valInput, vector<vector<double>> valResults, int minIterations, int maxIterations);
     void _train(vector<vector<double>> input, vector<vector<double>> allResults, int iterations);
     void _trainMiniBatch(vector<vector<double>> input, vector<vector<double>> allResults, int iterations, int batchSize);
@@ -133,6 +146,8 @@ private:
     void progressBar();
     void printBar(int curVal, int goal, int barWidth, StopWatch watch, int startTime);
     vector<double> rSquared(vector<vector<double>> predicted, vector<vector<double>> target);
+    double crossEntropy(vector<vector<double>> predicted, vector<vector<double>> target);
+
 
     vector<vector<shared_ptr<Neuron>>> layers;
     std::mt19937_64 rng;

@@ -6,6 +6,7 @@
 #include <random>
 #include <chrono>
 #include <windows.h>
+#include "../include/alg_stopwatch.h"
 #include "../include/NeuralNetwork.h"
 
 using std::cout;
@@ -14,6 +15,7 @@ using std::cin;
 using std::string;
 using std::ios;
 using std::ifstream;
+using std::to_string;
 using namespace std::chrono;
 
 void performanceTesting(vector<vector<double>> inputData, vector<vector<double>> inputExpected, int iterations);
@@ -24,48 +26,16 @@ void energy_config();
 void readMnistFile(vector<vector<double>>& testData, vector<vector<double>>& expected);
 void readCancerFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
 void energyFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName);
-vector<double> oneHotEncode(int value, int numCategories);
 void readClassificationQuantitativeFile(vector<vector<double>>& testData, vector<vector<double>>& expected, string fileName, int numColumns, int targetColumn, int numTargets);
-
+vector<double> oneHotEncode(int value, int numCategories);
+bool writeResults(string fileName, vector<double> primKey, vector<double> results, vector<double> runtime);
 
 int main() {
     string placeHolder;
-    //configuration that loads a pre-trained neural network for breast tumors
-    //test_cancer_config();
 
-    //configuration that trains a neural network using mini-batch gd instead of stochastic gd
-    //cancer_minibatch_config();
-
-    //configuration that trains and tests a neural network on breast tumors
-    //cancer_config();
-
-    //configuration that trains and tests a neural network on handwritten digits
+    test_mnist_config();
     //mnist_config();
-
-    //configuration that loads pre-trained neural network for digit recognition, and retrains with mini-batch gradient descent
-    //test_mnist_config();
-
-    //regression configuration that trains a neural network on residential structure data and predicts cooling load
     //energy_config();
-
-    //regression config for excitation current of synchronous machines
-    //synchronous_machine_config();
-
-    //classification config that predicts a class of Cherenkov radiation producing event
-    //gamma_ray_config();
-
-    //classification config that predicts whether signals are pulsars or not
-    //pulsar_config();
-
-
-    vector<vector<double>> data, expected;
-    string fileName = "mnist_train.csv";
-    //readMnistFile(data, expected);
-    readClassificationQuantitativeFile(data, expected, fileName, 755, 0, 10);
-    //string fileName = "Breast_Cancer.csv";
-    //readCancerFile(data, expected, fileName);
-    performanceTesting(data, expected, 3);
-
 
     cout << "Press x to continue" << endl;
     cin >> placeHolder;
@@ -88,7 +58,7 @@ void performanceTesting(vector<vector<double>> inputData, vector<vector<double>>
     int earlyStopping = 5;
     StopWatch myWatch;
     for (int mCount = 0; mCount < 3; mCount++) {
-        for (int i = 0; i < iterations; i++) {
+        for (int n = 0; n < iterations; n++) {
             SetConsoleTextAttribute(hConsole, 15);
             NeuralNetwork net(neuronCounts, learningRate);
             net.setMomentum(momentum);
@@ -127,7 +97,7 @@ void performanceTesting(vector<vector<double>> inputData, vector<vector<double>>
             auto testExpected = allLabels[2];
 
             SetConsoleTextAttribute(hConsole, 15);
-            cout << "Training model " << mCount + 1 << " | Iteration " << i + 1 << endl;
+            cout << "Training model " << mCount + 1 << " | Iteration " << n + 1 << endl;
             if (mCount == 0) {
                 myWatch.reset();
                 net.trainMiniBatchValidation(trainData, trainExpected, valData, valExpected, 20, 50, 64);
@@ -147,7 +117,7 @@ void performanceTesting(vector<vector<double>> inputData, vector<vector<double>>
             double testResult = net.test(testData, testExpected);
             avgAccuracies[mCount] += testResult;
             SetConsoleTextAttribute(hConsole, 15);
-            cout << "Model " << mCount + 1 << " iteration " << i + 1 << " accuracy: " << testResult << "%" << endl;
+            cout << "Model " << mCount + 1 << " iteration " << n + 1 << " accuracy: " << testResult << "%" << endl;
             cout << endl;
         }
     }
@@ -159,8 +129,8 @@ void performanceTesting(vector<vector<double>> inputData, vector<vector<double>>
 
 void test_mnist_config() {
     //train:test split
-    double splitRatio = 0.6;
-    string fileName = "mnist_train_config.csv";
+    double splitRatio = 0.2;
+    string fileName = "CapstoneModel.csv";
     vector<vector<double>> data, expected;
 
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -215,30 +185,15 @@ void test_mnist_config() {
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Percent of correctly identified digits: " << testResult << "%" << endl;
     cout << endl << endl;
-
-    cout << "Mini-batch Training Analysis" << endl;
-    cout << "********************************************************" << endl << endl;
-    net.resetWeights(trainData.size());
-    cout << "Pre-training accuracy: " << net.test(testData, testExpected) << "%";
-    cout << endl << "Training (This Could Take a Few Minutes)..." << endl;
-    net.setLR(0.01);
-    net.setMomentum(0.9);
-    net.trainMiniBatch(trainData, trainExpected, 40, 32);
-    SetConsoleTextAttribute(hConsole, 10);
-    cout << "Training Complete!" << endl << endl;
-    SetConsoleTextAttribute(hConsole, 15);
-    cout << "Post-training validation accuracy: " << net.test(trainData, trainExpected) << "%" << endl;
-    cout << "Post-training accuracy: " << net.test(testData, testExpected) << "%" << endl;
-
 }
 
 void mnist_config() {
     double learningRate = 0.001;
     double momentum = 0.9;
-    double dropOutRate = 0.8;
+    double dropOutRate = 1.0;
     vector<double> splitRatios = {0.6, 0.2, 0.2};
     //neuron counts for hidden and output layers
-    vector<int> neuronCounts = {32, 10};
+    vector<int> neuronCounts = {100, 10};
     //best with 200
     int minIterations = 40;
     int maxIterations = 200;
@@ -260,7 +215,6 @@ void mnist_config() {
 
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Reading data from mnist_train.csv..." << endl;
-    //readRegressionQuantitativeFile(data, expected, "mnist_train.csv", 785, 0);
     readMnistFile(data, expected);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Data collected!" << endl << endl;
@@ -299,10 +253,9 @@ void mnist_config() {
     cout << "Data split!" << endl << endl;
 
     SetConsoleTextAttribute(hConsole, 15);
-    cout << "Training with mini-batch supplemented by SGD..." << endl;
-    net.trainMiniBatch(trainData, trainExpected, 50, 32);
-    net.train(trainData, trainExpected, 20);
-    //net.saveModel("mnist_train_config.csv");
+    cout << "Training with SGD..." << endl;
+    //net.trainMiniBatch(trainData, trainExpected, 50, 32);
+    net.train(trainData, trainExpected, 5);
     SetConsoleTextAttribute(hConsole, 10);
     cout << "Model training complete!" << endl << endl;
     SetConsoleTextAttribute(hConsole, 15);
@@ -316,6 +269,7 @@ void mnist_config() {
     SetConsoleTextAttribute(hConsole, 15);
     cout << "Percent of correctly identified digits: " << testResult << "%" << endl;
     cout << endl;
+    net.saveModel("CapstoneModel.csv");
 }
 
 void cancer_config() {
@@ -651,4 +605,23 @@ vector<double> oneHotEncode(int value, int numCategories) {
     vector<double> encoded(numCategories, 0);
     encoded[value] = 1;
     return encoded;
+}
+
+bool writeResults(string fileName, vector<double> primKey, vector<double> results, vector<double> runtime) {
+    // try writing to file
+    ofstream saveFile(fileName);
+    try {
+        saveFile << "PrimaryKey,Accuracy,Runtime" << endl;
+        for (int i = 0; i < primKey.size(); i++) {
+            saveFile << primKey[i] << "," << results[i] << "," << runtime[i];
+            if (i != primKey.size() - 1) {
+                saveFile << endl;
+            }
+        }
+        return true;
+    }
+    catch(const std::exception& e) {
+        cout << e.what() << endl;
+        return false;
+    }
 }

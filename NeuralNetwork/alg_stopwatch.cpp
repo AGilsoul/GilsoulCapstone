@@ -15,7 +15,7 @@ StopWatch::StopWatch(): start(std::chrono::high_resolution_clock::now()) {}
 
 double StopWatch::elapsed_time(){
   auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::ratio<1>> running_time = end - start;
+  std::chrono::duration<double, std::milli> running_time = end - start;
   return running_time.count();
 }
 
